@@ -4,17 +4,16 @@ using EHRPlatform.Services.Patient.Features.Patients.Dtos.Responses;
 namespace EHRPlatform.Services.Patient.Features.Patients.Commands;
 
 /// <summary>
-/// Create patient command.
-/// Initiates creation of a new patient profile.
+/// Update patient command.
+/// Updates an existing patient's profile information.
 /// </summary>
-public record CreatePatientCommand : ICommand<PatientResponseDto>
+public record UpdatePatientCommand : ICommand<PatientResponseDto>
 {
+    public Guid PatientId { get; init; }
     public string FirstName { get; init; } = string.Empty;
     public string LastName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
     public string PhoneNumber { get; init; } = string.Empty;
-    public DateTime DateOfBirth { get; init; }
-    public string Gender { get; init; } = string.Empty;
     public string BloodType { get; init; } = string.Empty;
     public string? EmergencyContact { get; init; }
     public string? EmergencyPhone { get; init; }
