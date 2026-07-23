@@ -1,5 +1,6 @@
 using EHRPlatform.Common.Extensions;
-using EHRPlatform.Services.Prescription;
+using EHRPlatform.Services.Prescription.Data;
+using EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -23,6 +24,9 @@ builder.Services.AddDbContext<PrescriptionContext>(options =>
 
 // CQRS, Caching, Search, Messaging
 builder.Services.AddCommonServices(builder.Configuration);
+
+// Application Services
+builder.Services.AddScoped<PrescriptionMapper>();
 
 // Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT secret not configured");

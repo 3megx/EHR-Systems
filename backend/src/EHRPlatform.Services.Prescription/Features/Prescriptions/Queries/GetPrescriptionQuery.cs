@@ -1,5 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
+using EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Responses;
 
 namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Queries;
 

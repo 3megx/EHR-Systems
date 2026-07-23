@@ -1,5 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
+using EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Commands;
@@ -41,48 +41,4 @@ public class IssuePrescriptionCommandValidator : AbstractValidator<IssuePrescrip
         RuleFor(x => x.StartDate).LessThanOrEqualTo(DateTime.UtcNow);
         RuleFor(x => x.EndDate).GreaterThan(x => x.StartDate).When(x => x.EndDate.HasValue);
     }
-}
-
-/// <summary>
-/// Request refill command.
-/// </summary>
-public record RequestRefillCommand : ICommand
-{
-    public Guid PrescriptionId { get; init; }
-    public string? PharmacyId { get; init; }
-}
-
-/// <summary>
-/// Approve refill command.
-/// </summary>
-public record ApproveRefillCommand : ICommand
-{
-    public Guid PrescriptionId { get; init; }
-    public Guid RefillId { get; init; }
-}
-
-/// <summary>
-/// Suspend prescription command.
-/// </summary>
-public record SuspendPrescriptionCommand : ICommand
-{
-    public Guid PrescriptionId { get; init; }
-    public string Reason { get; init; } = string.Empty;
-}
-
-/// <summary>
-/// Resume prescription command.
-/// </summary>
-public record ResumePrescriptionCommand : ICommand
-{
-    public Guid PrescriptionId { get; init; }
-}
-
-/// <summary>
-/// Discontinue prescription command.
-/// </summary>
-public record DiscontinuePrescriptionCommand : ICommand
-{
-    public Guid PrescriptionId { get; init; }
-    public string Reason { get; init; } = string.Empty;
 }

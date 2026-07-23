@@ -1,8 +1,9 @@
-namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
+namespace EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Responses;
 
 /// <summary>
 /// Prescription response DTO.
 /// Single Responsibility: Represent prescription in API responses.
+/// Part of Application Layer (contracts between service and clients).
 /// </summary>
 public class PrescriptionResponseDto
 {

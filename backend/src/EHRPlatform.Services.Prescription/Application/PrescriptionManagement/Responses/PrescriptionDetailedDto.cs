@@ -1,8 +1,9 @@
-namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
+namespace EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Responses;
 
 /// <summary>
 /// Detailed prescription DTO.
 /// Single Responsibility: Represent complete prescription with all details and refill history.
+/// Part of Application Layer (contracts between service and clients).
 /// </summary>
 public class PrescriptionDetailedDto
 {

@@ -1,8 +1,9 @@
-namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
+namespace EHRPlatform.Services.Prescription.Application.PrescriptionManagement.Responses;
 
 /// <summary>
-/// Refill request list DTO.
-/// Single Responsibility: Represent refill requests in paginated responses.
+/// Refill request list DTO with pagination.
+/// Single Responsibility: Represent paginated list of pending refill requests in API responses.
+/// Part of Application Layer (contracts between service and clients).
 /// </summary>
 public class RefillRequestListDto
 {
@@ -12,9 +13,6 @@ public class RefillRequestListDto
     public int PageSize { get; set; }
 }
 
-/// <summary>
-/// Refill request DTO.
-/// </summary>
 public class RefillRequestDto
 {
     public Guid RefillId { get; set; }
