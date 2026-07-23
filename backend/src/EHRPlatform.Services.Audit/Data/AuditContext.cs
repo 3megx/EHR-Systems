@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Audit.Features.Audit.Domain;
+using EHRPlatform.Services.Audit.Domain.Entities;
 
-namespace EHRPlatform.Services.Audit;
+namespace EHRPlatform.Services.Audit.Data;
 
+/// <summary>
+/// DbContext for Audit Service.
+/// Manages audit logs, access logs, compliance reports (HIPAA-compliant).
+/// </summary>
 public class AuditContext : BaseDbContext
 {
     public AuditContext(DbContextOptions<AuditContext> options) : base(options) { }

@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Analytics.Features.Analytics.Domain;
+using EHRPlatform.Services.Analytics.Domain.Entities;
 
-namespace EHRPlatform.Services.Analytics;
+namespace EHRPlatform.Services.Analytics.Data;
 
+/// <summary>
+/// DbContext for Analytics Service.
+/// Manages metrics, dashboards, reports.
+/// </summary>
 public class AnalyticsContext : BaseDbContext
 {
     public AnalyticsContext(DbContextOptions<AnalyticsContext> options) : base(options) { }

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Identity.Features.Users.Domain;
+using EHRPlatform.Services.Identity.Domain.Entities;
 
-namespace EHRPlatform.Services.Identity;
+namespace EHRPlatform.Services.Identity.Data;
 
 /// <summary>
 /// DbContext for Identity Service.
