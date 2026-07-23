@@ -1,11 +1,11 @@
 using Mapster;
 
-namespace EHRPlatform.Services.Billing.Application.Invoicing;
+namespace EHRPlatform.Services.Billing.Application.Invoicing.Mappers;
 
 /// <summary>
-/// Mapster registration profile for Invoice entity mappings.
-/// Handles conversion between domain models and DTOs.
-/// Single Responsibility: Configure all Invoice-related type mappings.
+/// Mapster registration profile for Invoicing feature.
+/// Handles conversion between Invoice/LineItem domain models and DTOs.
+/// Single Responsibility: Configure Invoicing-related type mappings only.
 /// </summary>
 public class InvoiceMappingProfile : IRegister
 {
@@ -43,21 +43,6 @@ public class InvoiceMappingProfile : IRegister
             .Map(dest => dest.CPTCode, src => src.CPTCode)
             .Map(dest => dest.Quantity, src => src.Quantity)
             .Map(dest => dest.UnitPrice, src => src.UnitPrice)
-            .Map(dest => dest.Amount, src => src.Amount);
-
-        // Payment → PaymentDto
-        config.NewConfig<Payment, PaymentDto>()
-            .Map(dest => dest.Id, src => src.Id)
-            .Map(dest => dest.Amount, src => src.Amount)
-            .Map(dest => dest.Method, src => src.Method)
-            .Map(dest => dest.ReceivedAt, src => src.ReceivedAt);
-
-        // InsuranceClaim → InsuranceClaimDto
-        config.NewConfig<InsuranceClaim, InsuranceClaimDto>()
-            .Map(dest => dest.Id, src => src.Id)
-            .Map(dest => dest.InsuranceProvider, src => src.InsuranceProvider)
-            .Map(dest => dest.ClaimNumber, src => src.ClaimNumber)
-            .Map(dest => dest.Status, src => src.Status)
             .Map(dest => dest.Amount, src => src.Amount);
 
         // InvoiceResponseDto → Invoice (for updates/inserts)

@@ -2,12 +2,12 @@ using Mapster;
 using EHRPlatform.Common.Mapping;
 using Microsoft.Extensions.Logging;
 
-namespace EHRPlatform.Services.Billing.Application.Invoicing;
+namespace EHRPlatform.Services.Billing.Application.Invoicing.Mappers;
 
 /// <summary>
 /// Invoice Mapper
-/// Single Responsibility: Convert between Invoice domain models and DTOs.
-/// Handles all Invoice-related mappings with optional post-processing.
+/// Single Responsibility: Convert between Invoice and LineItem domain models and DTOs.
+/// Handles only Invoicing feature mappings.
 /// </summary>
 public class InvoiceMapper : MappingServiceBase<Invoice, InvoiceResponseDto>
 {
@@ -50,32 +50,6 @@ public class InvoiceMapper : MappingServiceBase<Invoice, InvoiceResponseDto>
     {
         Logger.LogDebug("Mapping {Count} invoices to response DTO list", invoices.Count);
         return invoices.Adapt<List<InvoiceResponseDto>>();
-    }
-
-    /// <summary>
-    /// Map invoices with enriched balance and aging information.
-    /// </summary>
-    public OutstandingBalanceDto MapToOutstandingBalanceDto(
-        Guid patientId,
-        ICollection<Invoice> invoices)
-    {
-        Logger.LogDebug("Mapping outstanding balance for patient {PatientId}", patientId);
-
-        var invoiceDtos = invoices.Adapt<List<InvoiceResponseDto>>();
-        var totalBalance = invoices.Sum(i => i.BalanceDue);
-        var overdueInvoices = invoices.Count(i => i.DueDate < DateTime.UtcNow && i.Status != "Paid");
-        var overdueAmount = invoices
-            .Where(i => i.DueDate < DateTime.UtcNow && i.Status != "Paid")
-            .Sum(i => i.BalanceDue);
-
-        return new OutstandingBalanceDto
-        {
-            PatientId = patientId,
-            TotalBalance = totalBalance,
-            OverdueInvoices = overdueInvoices,
-            OverdueAmount = overdueAmount,
-            Invoices = invoiceDtos
-        };
     }
 
     /// <summary>
