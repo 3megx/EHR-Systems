@@ -1,5 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Billing.Application.Reports.Responses;
+using EHRPlatform.Services.Billing.Application.Invoicing.Responses;
 
 namespace EHRPlatform.Services.Billing.Features.Reports.Queries;
 
