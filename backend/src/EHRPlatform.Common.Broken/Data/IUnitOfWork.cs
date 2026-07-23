@@ -1,4 +1,5 @@
 using EHRPlatform.Common.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EHRPlatform.Common.Data;

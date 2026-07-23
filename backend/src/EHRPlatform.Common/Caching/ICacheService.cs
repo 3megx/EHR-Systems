@@ -1,192 +1,70 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace EHRPlatform.Common.Caching;
 
 /// <summary>
-/// Cache interface for distributed caching with Redis.
-/// Provides get/set/remove operations with pattern-based invalidation.
-/// Supports TTL-based expiration for automatic cache cleanup.
-/// 
-/// HIPAA Note: Cache should not store sensitive PII without encryption.
-/// Use data masking before caching patient-specific queries.
+/// Distributed cache service abstraction for Redis.
+/// Provides high-level cache operations with automatic serialization.
 /// </summary>
 public interface ICacheService
 {
     /// <summary>
-    /// Get value from cache by key.
-    /// Returns null if key not found or expired.
+    /// Get a value from cache.
     /// </summary>
-    /// <typeparam name="T">Type of cached value (must be JSON-serializable)</typeparam>
-    /// <param name="key">Cache key (e.g., "patient:123")</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Cached value or null if not found</returns>
     Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
-    /// Set value in cache with optional expiration.
-    /// If key exists, overwrites the value.
+    /// Set a value in cache with optional TTL.
     /// </summary>
-    /// <typeparam name="T">Type of value to cache</typeparam>
-    /// <param name="key">Cache key</param>
-    /// <param name="value">Value to cache</param>
-    /// <param name="expiration">Optional TTL. If null, uses default duration (5 minutes).</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    Task SetAsync<T>(
+    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
+
+    /// <summary>
+    /// Get a value from cache or load it using the provided factory function.
+    /// Atomically prevents thundering herd problem.
+    /// </summary>
+    Task<T> GetOrSetAsync<T>(
         string key,
-        T value,
+        Func<string, Task<T>> factory,
         TimeSpan? expiration = null,
         CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
-    /// Remove single key from cache.
-    /// Does not error if key doesn't exist.
+    /// Remove a single key or pattern from cache.
     /// </summary>
-    /// <param name="key">Cache key to remove</param>
-    /// <param name="cancellationToken">Cancellation token</param>
     Task RemoveAsync(string key, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Remove multiple keys in batch.
-    /// Does not error if keys don't exist.
+    /// Remove multiple keys matching a pattern (e.g., "patient:*").
     /// </summary>
-    /// <param name="keys">Collection of cache keys to remove</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    Task RemoveAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default);
+    Task RemoveByPatternAsync(string pattern, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Remove all keys matching a pattern using Redis SCAN.
-    /// Useful for bulk invalidation (e.g., "patient:*" to clear all patient caches).
-    /// 
-    /// Warning: Pattern matching can be expensive on large caches.
-    /// Use specific patterns when possible.
-    /// 
-    /// Common patterns:
-    /// - "patient:*" - all patient caches
-    /// - "appointment:*" - all appointment caches
-    /// - "patient:123:*" - all caches for patient 123
-    /// </summary>
-    /// <param name="pattern">Redis glob pattern (*, ?, [])</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Number of keys removed</returns>
-    Task<long> RemoveByPatternAsync(string pattern, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Check if key exists in cache.
+    /// Check if a key exists in cache.
     /// </summary>
     Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get or set value atomically.
-    /// If key exists, returns cached value.
-    /// If not, executes factory function, caches result, and returns.
-    /// Useful for avoiding thundering herd problem.
+    /// Extend or set a new TTL for an existing key.
     /// </summary>
-    /// <typeparam name="T">Value type</typeparam>
-    /// <param name="key">Cache key</param>
-    /// <param name="factory">Factory function to create value if not cached</param>
-    /// <param name="expiration">Cache duration</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    Task<T> GetOrSetAsync<T>(
-        string key,
-        Func<CancellationToken, Task<T>> factory,
-        TimeSpan? expiration = null,
-        CancellationToken cancellationToken = default) where T : class;
+    Task ExpireAsync(string key, TimeSpan expiration, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get multiple values by keys efficiently using pipeline.
-    /// Returns dictionary with keys present in cache.
-    /// Missing keys are not included in result.
+    /// Get remaining TTL for a key in seconds (-1 if no expiration, -2 if key doesn't exist).
     /// </summary>
-    /// <typeparam name="T">Value type</typeparam>
-    /// <param name="keys">Collection of cache keys</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Dictionary of key-value pairs</returns>
-    Task<Dictionary<string, T>> GetManyAsync<T>(
-        IEnumerable<string> keys,
-        CancellationToken cancellationToken = default) where T : class;
+    Task<long> GetTimeToLiveAsync(string key, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Set expiration time on existing key.
-    /// Useful for extending cache duration or implementing LRU-like behavior.
-    /// </summary>
-    /// <param name="key">Cache key</param>
-    /// <param name="expiration">New TTL duration</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>True if key exists and expiration was set, false if key not found</returns>
-    Task<bool> ExpireAsync(
-        string key,
-        TimeSpan expiration,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Get time to live (TTL) for key.
-    /// </summary>
-    /// <param name="key">Cache key</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>TimeSpan remaining, or null if key doesn't exist or has no expiration</returns>
-    Task<TimeSpan?> GetTimeToLiveAsync(string key, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Clear entire cache.
-    /// WARNING: This affects all applications using Redis.
-    /// Use only during maintenance or testing.
-    /// </summary>
-    Task FlushAllAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Get cache statistics for monitoring.
-    /// Includes hit rate, memory usage, key count, etc.
+    /// Get cache statistics for monitoring and observability.
     /// </summary>
     Task<CacheStatistics> GetStatisticsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// Marker interface for queries that should be cached.
-/// Automatically cached by CachingBehavior.
-/// 
-/// Usage:
-/// public class GetPatientQuery : IQuery<PatientDto>, ICachedQuery
-/// {
-///     public string CacheKey => $"patient:{PatientId}";
-///     public TimeSpan? Duration => TimeSpan.FromMinutes(5);
-/// }
-/// </summary>
-public interface ICachedQuery
-{
-    /// <summary>
-    /// Unique cache key for this query result.
-    /// Should include all parameters that affect the result.
-    /// 
-    /// Examples:
-    /// - $"patient:{Id}" - single patient
-    /// - $"patients:page:{Page}:size:{Size}" - paginated list
-    /// - $"patients:search:{SearchTerm}:page:{Page}" - with search
-    /// </summary>
-    string CacheKey { get; }
-
-    /// <summary>
-    /// Cache duration (TTL).
-    /// If null, uses ICacheService default (5 minutes).
-    /// Set to TimeSpan.Zero for no caching.
-    /// </summary>
-    TimeSpan? Duration { get; }
-}
-
-/// <summary>
-/// Cache statistics for monitoring and optimization.
-/// Retrieved via GetStatisticsAsync().
+/// Cache statistics for monitoring.
 /// </summary>
 public class CacheStatistics
 {
-    public long HitCount { get; set; }
-    public long MissCount { get; set; }
-    public long KeyCount { get; set; }
-    public long MemoryUsedBytes { get; set; }
-    public double HitRate => HitCount + MissCount > 0 
-        ? (double)HitCount / (HitCount + MissCount) 
-        : 0;
-    public DateTime CollectedAt { get; set; } = DateTime.UtcNow;
+    public long TotalKeys { get; set; }
+    public long UsedMemoryBytes { get; set; }
+    public long MaxMemoryBytes { get; set; }
+    public double EvictionRate { get; set; }
+    public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
 }

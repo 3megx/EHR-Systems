@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -142,7 +143,7 @@ public class OutboxProcessor : BackgroundService
                 ex,
                 "Error publishing event {EventId}, attempt {Attempt}",
                 outboxEvent.Id,
-                outboxEvent.FailureCount + 1);
+                outboxEvent.PublishAttempts + 1);
 
             // Increment failure count
             await outboxRepository.IncrementAttemptAsync(
@@ -151,12 +152,12 @@ public class OutboxProcessor : BackgroundService
                 cancellationToken);
 
             // Check if exceeded max retries
-            if ((outboxEvent.FailureCount + 1) >= _maxRetries)
+            if ((outboxEvent.PublishAttempts + 1) >= outboxEvent.MaxPublishAttempts)
             {
                 _logger.LogError(
                     "Event {EventId} exceeded max retries ({MaxRetries}), moving to dead letter queue",
                     outboxEvent.Id,
-                    _maxRetries);
+                    outboxEvent.MaxPublishAttempts);
 
                 // TODO: Move to dead letter queue for manual inspection
                 // await deadLetterQueue.EnqueueAsync(outboxEvent);
@@ -213,7 +214,7 @@ public class OutboxRepository : IOutboxRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.Set<OutboxEvent>()
-            .Where(e => !e.IsPublished && e.FailureCount < 3)
+            .Where(e => !e.IsPublished && e.PublishAttempts < e.MaxPublishAttempts)
             .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -222,7 +223,7 @@ public class OutboxRepository : IOutboxRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.Set<OutboxEvent>()
-            .Where(e => e.FailureCount >= 3)
+            .Where(e => !e.IsPublished && e.PublishAttempts >= e.MaxPublishAttempts)
             .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -237,9 +238,9 @@ public class OutboxRepository : IOutboxRepository
         var @event = await _context.Set<OutboxEvent>().FindAsync(new object[] { eventId }, cancellationToken);
         if (@event != null)
         {
-            @event.IsPublished = true;
             @event.PublishedAt = DateTime.UtcNow;
             _context.Set<OutboxEvent>().Update(@event);
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 
@@ -251,8 +252,8 @@ public class OutboxRepository : IOutboxRepository
         var @event = await _context.Set<OutboxEvent>().FindAsync(new object[] { eventId }, cancellationToken);
         if (@event != null)
         {
-            @event.FailureCount++;
-            @event.LastFailureReason = failureReason;
+            @event.PublishAttempts++;
+            @event.ErrorMessage = failureReason;
             _context.Set<OutboxEvent>().Update(@event);
             await _context.SaveChangesAsync(cancellationToken);
         }

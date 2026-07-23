@@ -7,8 +7,22 @@ using Microsoft.Extensions.Logging;
 /// Base class for entity mappers.
 /// Provides common mapping functionality with logging and error handling.
 /// Single Responsibility: Each mapper handles ONE entity type.
+/// 
+/// This class provides convenience methods for mapping a specific TEntity/TDto pair.
+/// For generic mapping, use IMappingService directly or create mapper implementations per entity type.
+/// 
+/// Usage:
+/// public class PatientMappingService : MappingServiceBase<Patient, PatientDto>
+/// {
+///     public PatientMappingService(ILogger<MappingServiceBase<Patient, PatientDto>> logger) : base(logger) { }
+/// }
+/// 
+/// // Later in handlers/queries
+/// var patientDto = _mapper.MapSingleToDto(patient);
+/// var patientDtos = _mapper.MapListToDto(patients);
+/// var patient = _mapper.MapSingleToEntity(patientDto);
 /// </summary>
-public abstract class MappingServiceBase<TEntity, TDto> : IMappingService
+public abstract class MappingServiceBase<TEntity, TDto>
     where TEntity : class
     where TDto : class
 {
@@ -22,7 +36,7 @@ public abstract class MappingServiceBase<TEntity, TDto> : IMappingService
     /// <summary>
     /// Map single entity to DTO.
     /// </summary>
-    public virtual TDto MapToDto(TEntity entity)
+    protected virtual TDto MapSingleToDto(TEntity entity)
     {
         if (entity == null)
         {
@@ -46,7 +60,7 @@ public abstract class MappingServiceBase<TEntity, TDto> : IMappingService
     /// <summary>
     /// Map collection of entities to DTOs.
     /// </summary>
-    public virtual IEnumerable<TDto> MapToDtoList(IEnumerable<TEntity> entities)
+    protected virtual IEnumerable<TDto> MapListToDto(IEnumerable<TEntity> entities)
     {
         if (entities == null)
         {
@@ -73,7 +87,7 @@ public abstract class MappingServiceBase<TEntity, TDto> : IMappingService
     /// <summary>
     /// Map DTO to entity (for updates/inserts).
     /// </summary>
-    public virtual TEntity MapToEntity(TDto dto)
+    protected virtual TEntity MapSingleToEntity(TDto dto)
     {
         if (dto == null)
         {
@@ -92,26 +106,5 @@ public abstract class MappingServiceBase<TEntity, TDto> : IMappingService
             Logger.LogError(ex, "Error mapping {DtoType} to {EntityType}", typeof(TDto).Name, typeof(TEntity).Name);
             throw;
         }
-    }
-
-    /// <summary>
-    /// Explicit interface implementation - must provide implementations in derived classes.
-    /// </summary>
-    TDto IMappingService.MapToDto<TEntity2, TDto2>(TEntity2 entity) 
-        where TEntity2 : class where TDto2 : class
-    {
-        return entity.Adapt<TDto2>();
-    }
-
-    IEnumerable<TDto2> IMappingService.MapToDtoList<TEntity2, TDto2>(IEnumerable<TEntity2> entities) 
-        where TEntity2 : class where TDto2 : class
-    {
-        return entities.Adapt<List<TDto2>>();
-    }
-
-    TEntity2 IMappingService.MapToEntity<TDto2, TEntity2>(TDto2 dto) 
-        where TEntity2 : class where TDto2 : class
-    {
-        return dto.Adapt<TEntity2>();
     }
 }

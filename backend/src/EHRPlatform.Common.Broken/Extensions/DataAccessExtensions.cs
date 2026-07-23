@@ -105,6 +105,31 @@ public static class DataAccessExtensions
     }
 
     /// <summary>
+    /// Register Elasticsearch search service.
+    /// Enables full-text search on indexed entities.
+    /// </summary>
+    public static IServiceCollection AddElasticsearchSearch(
+        this IServiceCollection services,
+        string? elasticsearchUrl)
+    {
+        if (string.IsNullOrEmpty(elasticsearchUrl))
+            throw new ArgumentException("Elasticsearch URL is required", nameof(elasticsearchUrl));
+
+        // Register Elasticsearch client
+        var settings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))
+            .DisableDirectStreaming()
+            .ThrowExceptions();
+
+        var client = new ElasticsearchClient(settings);
+        services.AddSingleton(client);
+
+        // Register search service
+        services.AddSingleton<ISearchService, ElasticsearchService>();
+
+        return services;
+    }
+
+    /// <summary>
     /// Add database migration support.
     /// Creates migrator service for applying pending migrations at startup.
     /// </summary>
@@ -207,28 +232,3 @@ public enum AccessLevel
     Administrative = 3,
     Full = 4
 }
-
-    /// <summary>
-    /// Register Elasticsearch search service.
-    /// Enables full-text search on indexed entities.
-    /// </summary>
-    public static IServiceCollection AddElasticsearchSearch(
-        this IServiceCollection services,
-        string? elasticsearchUrl)
-    {
-        if (string.IsNullOrEmpty(elasticsearchUrl))
-            throw new ArgumentException("Elasticsearch URL is required", nameof(elasticsearchUrl));
-
-        // Register Elasticsearch client
-        var settings = new ElasticsearchClientSettings(new Uri(elasticsearchUrl))
-            .DisableDirectStreaming()
-            .ThrowExceptions();
-
-        var client = new ElasticsearchClient(settings);
-        services.AddSingleton(client);
-
-        // Register search service
-        services.AddSingleton<ISearchService, ElasticsearchService>();
-
-        return services;
-    }
