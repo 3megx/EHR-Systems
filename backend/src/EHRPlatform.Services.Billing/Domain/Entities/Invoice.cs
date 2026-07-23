@@ -1,7 +1,7 @@
 using EHRPlatform.Common.Entities;
-using EHRPlatform.Common.Events;
+using EHRPlatform.Services.Billing.Domain.Events;
 
-namespace EHRPlatform.Services.Billing.Domain;
+namespace EHRPlatform.Services.Billing.Domain.Entities;
 
 /// <summary>
 /// Invoice aggregate root.
@@ -14,7 +14,7 @@ public class Invoice : AuditableEntity
     public string InvoiceNumber { get; set; } = string.Empty;
     public DateTime ServiceDate { get; set; }
     public DateTime DueDate { get; set; }
-    public string Status { get; set; } = "Draft"; // Draft, Submitted, Pending, Paid, PartiallyPaid, Overdue, Cancelled
+    public string Status { get; set; } = "Draft";
     public decimal SubTotal { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal InsuranceResponsibility { get; set; }
@@ -26,7 +26,6 @@ public class Invoice : AuditableEntity
     public string? InsurancePolicyNumber { get; set; }
     public string? Notes { get; set; }
 
-    // Collections
     public ICollection<LineItem> LineItems { get; } = new List<LineItem>();
     public ICollection<Payment> Payments { get; } = new List<Payment>();
     public ICollection<InsuranceClaim> InsuranceClaims { get; } = new List<InsuranceClaim>();

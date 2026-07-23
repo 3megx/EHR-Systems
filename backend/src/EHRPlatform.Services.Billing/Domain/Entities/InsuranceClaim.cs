@@ -1,6 +1,6 @@
 using EHRPlatform.Common.Entities;
 
-namespace EHRPlatform.Services.Billing.Domain;
+namespace EHRPlatform.Services.Billing.Domain.Entities;
 
 /// <summary>
 /// Insurance claim tracking.
@@ -14,7 +14,7 @@ public class InsuranceClaim : BaseEntity
     public DateTime SubmittedAt { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public DateTime? DeniedAt { get; set; }
-    public string Status { get; set; } = string.Empty; // Submitted, Approved, Denied, Paid
+    public string Status { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public decimal? ApprovedAmount { get; set; }
     public string? DenialReason { get; set; }

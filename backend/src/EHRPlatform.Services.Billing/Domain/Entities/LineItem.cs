@@ -1,6 +1,6 @@
 using EHRPlatform.Common.Entities;
 
-namespace EHRPlatform.Services.Billing.Domain;
+namespace EHRPlatform.Services.Billing.Domain.Entities;
 
 /// <summary>
 /// Invoice line item (charge/service).
@@ -10,9 +10,9 @@ public class LineItem : BaseEntity
 {
     public Guid InvoiceId { get; set; }
     public string Description { get; set; } = string.Empty;
-    public string CPTCode { get; set; } = string.Empty; // Current Procedural Terminology
+    public string CPTCode { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
-    public decimal Amount { get; set; } // Quantity * UnitPrice
+    public decimal Amount { get; set; }
     public Invoice Invoice { get; set; } = null!;
 }
