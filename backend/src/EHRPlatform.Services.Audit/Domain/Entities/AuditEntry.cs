@@ -1,6 +1,6 @@
 using EHRPlatform.Common.Entities;
 
-namespace EHRPlatform.Services.Audit.Features.Audit.Domain;
+namespace EHRPlatform.Services.Audit.Domain.Entities;
 
 /// <summary>
 /// Immutable audit entry (HIPAA-compliant).
