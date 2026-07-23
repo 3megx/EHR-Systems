@@ -1,7 +1,8 @@
 using EHRPlatform.Common.Entities;
 using EHRPlatform.Common.Events;
+using EHRPlatform.Services.Clinical.Domain.Events;
 
-namespace EHRPlatform.Services.Clinical.Features.ClinicalNotes.Domain;
+namespace EHRPlatform.Services.Clinical.Domain.Entities;
 
 /// <summary>
 /// Clinical note aggregate - SOAP format (Subjective, Objective, Assessment, Plan).
@@ -89,114 +90,4 @@ public class ClinicalNote : AuditableEntity
     public void RaiseEvent(IntegrationEvent @event) => _domainEvents.Add(@event);
     public IReadOnlyList<IntegrationEvent> GetDomainEvents() => _domainEvents.AsReadOnly();
     public void ClearDomainEvents() => _domainEvents.Clear();
-}
-
-/// <summary>
-/// Vital signs measurement.
-/// </summary>
-public class VitalSigns : BaseEntity
-{
-    public Guid ClinicalNoteId { get; set; }
-    public DateTime RecordedAt { get; set; }
-    public decimal Temperature { get; set; } // Celsius
-    public int SystolicBP { get; set; }
-    public int DiastolicBP { get; set; }
-    public int HeartRate { get; set; }
-    public int RespiratoryRate { get; set; }
-    public decimal? Weight { get; set; } // kg
-    public ClinicalNote ClinicalNote { get; set; } = null!;
-
-    public string GetBloodPressure() => $"{SystolicBP}/{DiastolicBP}";
-}
-
-/// <summary>
-/// Clinical diagnosis (ICD-10).
-/// </summary>
-public class ClinicalDiagnosis : BaseEntity
-{
-    public Guid ClinicalNoteId { get; set; }
-    public string DiagnosisCode { get; set; } = string.Empty; // ICD-10 code
-    public string DiagnosisText { get; set; } = string.Empty;
-    public string DiagnosisType { get; set; } = string.Empty; // Principal, Secondary
-    public ClinicalNote ClinicalNote { get; set; } = null!;
-}
-
-/// <summary>
-/// Clinical procedure performed.
-/// </summary>
-public class ClinicalProcedure : BaseEntity
-{
-    public Guid ClinicalNoteId { get; set; }
-    public string ProcedureName { get; set; } = string.Empty;
-    public string ProcedureCode { get; set; } = string.Empty; // CPT or SNOMED code
-    public DateTime PerformedAt { get; set; }
-    public string Result { get; set; } = string.Empty;
-    public ClinicalNote ClinicalNote { get; set; } = null!;
-}
-
-/// <summary>
-/// Domain events.
-/// </summary>
-public record DiagnosisRecordedEvent : IntegrationEvent
-{
-    public Guid ClinicalNoteId { get; set; }
-    public Guid PatientId { get; set; }
-    public string DiagnosisCode { get; set; }
-    public string DiagnosisText { get; set; }
-
-    public DiagnosisRecordedEvent(Guid noteId, Guid patientId, string code, string text)
-    {
-        ClinicalNoteId = noteId;
-        PatientId = patientId;
-        DiagnosisCode = code;
-        DiagnosisText = text;
-    }
-}
-
-public record VitalSignsRecordedEvent : IntegrationEvent
-{
-    public Guid ClinicalNoteId { get; set; }
-    public Guid PatientId { get; set; }
-    public int SystolicBP { get; set; }
-    public int DiastolicBP { get; set; }
-    public int HeartRate { get; set; }
-
-    public VitalSignsRecordedEvent(Guid noteId, Guid patientId, int systolic, int diastolic, int hr)
-    {
-        ClinicalNoteId = noteId;
-        PatientId = patientId;
-        SystolicBP = systolic;
-        DiastolicBP = diastolic;
-        HeartRate = hr;
-    }
-}
-
-public record ProcedurePerformedEvent : IntegrationEvent
-{
-    public Guid ClinicalNoteId { get; set; }
-    public Guid PatientId { get; set; }
-    public string ProcedureName { get; set; }
-    public string ProcedureCode { get; set; }
-
-    public ProcedurePerformedEvent(Guid noteId, Guid patientId, string name, string code)
-    {
-        ClinicalNoteId = noteId;
-        PatientId = patientId;
-        ProcedureName = name;
-        ProcedureCode = code;
-    }
-}
-
-public record ClinicalNoteCompletedEvent : IntegrationEvent
-{
-    public Guid ClinicalNoteId { get; set; }
-    public Guid PatientId { get; set; }
-    public DateTime EncounterDate { get; set; }
-
-    public ClinicalNoteCompletedEvent(Guid noteId, Guid patientId, DateTime encounterDate)
-    {
-        ClinicalNoteId = noteId;
-        PatientId = patientId;
-        EncounterDate = encounterDate;
-    }
 }

@@ -1,7 +1,8 @@
 using EHRPlatform.Common.Entities;
 using EHRPlatform.Common.Events;
+using EHRPlatform.Services.Prescription.Domain.Events;
 
-namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Domain;
+namespace EHRPlatform.Services.Prescription.Domain.Entities;
 
 /// <summary>
 /// Prescription aggregate root.
@@ -97,116 +98,4 @@ public class Prescription : AuditableEntity
     public void RaiseEvent(IntegrationEvent @event) => _domainEvents.Add(@event);
     public IReadOnlyList<IntegrationEvent> GetDomainEvents() => _domainEvents.AsReadOnly();
     public void ClearDomainEvents() => _domainEvents.Clear();
-}
-
-/// <summary>
-/// Prescription refill request.
-/// </summary>
-public class PrescriptionRefill : BaseEntity
-{
-    public Guid PrescriptionId { get; set; }
-    public DateTime RequestedAt { get; set; }
-    public DateTime? ApprovedAt { get; set; }
-    public DateTime? DeniedAt { get; set; }
-    public string Status { get; set; } = string.Empty; // Pending, Approved, Denied, Dispensed
-    public string? PharmacyId { get; set; }
-    public string? DenialReason { get; set; }
-    public Prescription Prescription { get; set; } = null!;
-}
-
-/// <summary>
-/// Domain events.
-/// </summary>
-public record PrescriptionIssuedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public string MedicationName { get; set; }
-    public string Dosage { get; set; }
-
-    public PrescriptionIssuedEvent(Guid id, Guid patientId, Guid providerId, string med, string dosage)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        ProviderId = providerId;
-        MedicationName = med;
-        Dosage = dosage;
-    }
-}
-
-public record PrescriptionRefillRequestedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public string MedicationName { get; set; }
-
-    public PrescriptionRefillRequestedEvent(Guid id, Guid patientId, Guid providerId, string med)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        ProviderId = providerId;
-        MedicationName = med;
-    }
-}
-
-public record PrescriptionRefillApprovedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public string MedicationName { get; set; }
-
-    public PrescriptionRefillApprovedEvent(Guid id, Guid patientId, string med)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        MedicationName = med;
-    }
-}
-
-public record PrescriptionSuspendedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public string MedicationName { get; set; }
-    public string Reason { get; set; }
-
-    public PrescriptionSuspendedEvent(Guid id, Guid patientId, string med, string reason)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        MedicationName = med;
-        Reason = reason;
-    }
-}
-
-public record PrescriptionResumedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public string MedicationName { get; set; }
-
-    public PrescriptionResumedEvent(Guid id, Guid patientId, string med)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        MedicationName = med;
-    }
-}
-
-public record PrescriptionDiscontinuedEvent : IntegrationEvent
-{
-    public Guid PrescriptionId { get; set; }
-    public Guid PatientId { get; set; }
-    public string MedicationName { get; set; }
-    public string Reason { get; set; }
-
-    public PrescriptionDiscontinuedEvent(Guid id, Guid patientId, string med, string reason)
-    {
-        PrescriptionId = id;
-        PatientId = patientId;
-        MedicationName = med;
-        Reason = reason;
-    }
 }
