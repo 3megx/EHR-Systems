@@ -3,8 +3,9 @@ using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Billing.Domain;
 using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
-using EHRPlatform.Services.Billing.Features.Invoicing.Dtos.Responses;
-using EHRPlatform.Services.Billing.Mappings;
+using EHRPlatform.Services.Billing.Application.Invoicing.Responses;
+using EHRPlatform.Services.Billing.Application.Invoicing;
+using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Billing.Features.Invoicing.Handlers;
 

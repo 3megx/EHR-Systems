@@ -6,8 +6,10 @@ using EHRPlatform.Services.Billing.Features.Reports.Queries;
 using EHRPlatform.Services.Billing.Application.Invoicing;
 using Microsoft.Extensions.Logging;
 
+namespace EHRPlatform.Services.Billing.Features.Reports.Handlers;
+
 /// <summary>
-/// Get patient invoices handler.
+/// Get patient invoices handler (for reporting).
 /// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetPatientInvoicesQueryHandler : IQueryHandler<GetPatientInvoicesQuery, InvoiceListDto>
@@ -52,7 +54,7 @@ public class GetPatientInvoicesQueryHandler : IQueryHandler<GetPatientInvoicesQu
 }
 
 /// <summary>
-/// Get outstanding balance handler.
+/// Get outstanding balance handler (for reporting).
 /// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetPatientOutstandingBalanceQueryHandler : IQueryHandler<GetPatientOutstandingBalanceQuery, OutstandingBalanceDto>
@@ -84,5 +86,71 @@ public class GetPatientOutstandingBalanceQueryHandler : IQueryHandler<GetPatient
 
         // Delegate mapping and balance calculation to mapper
         return _mapper.MapToOutstandingBalanceDto(request.PatientId, invoices);
+    }
+}
+
+/// <summary>
+/// Get billing report handler.
+/// Pure business logic - generates aggregate billing metrics.
+/// </summary>
+public class GetBillingReportQueryHandler : IQueryHandler<GetBillingReportQuery, BillingReportDto>
+{
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<GetBillingReportQueryHandler> _logger;
+
+    public GetBillingReportQueryHandler(
+        IUnitOfWork unitOfWork,
+        ILogger<GetBillingReportQueryHandler> logger)
+    {
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+    }
+
+    public async Task<BillingReportDto> Handle(
+        GetBillingReportQuery request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Generating billing report for {StartDate} to {EndDate}",
+            request.StartDate, request.EndDate);
+
+        var repo = _unitOfWork.Repository<Invoice>();
+        var invoices = await repo.ToListAsync(
+            q => q.Where(i => i.ServiceDate >= request.StartDate && i.ServiceDate <= request.EndDate),
+            cancellationToken);
+
+        var totalInvoiced = invoices.Sum(i => i.TotalAmount);
+        var totalPaid = invoices.Sum(i => i.AmountPaid);
+        var totalOutstanding = invoices.Sum(i => i.BalanceDue);
+        var collectionRate = totalInvoiced > 0 ? (double)(totalPaid / totalInvoiced) : 0;
+
+        var dailyMetrics = invoices
+            .GroupBy(i => i.ServiceDate.Date)
+            .Select(g => new BillingMetricDto
+            {
+                Date = g.Key,
+                Invoiced = g.Sum(i => i.TotalAmount),
+                Paid = g.Sum(i => i.AmountPaid),
+                InsuranceClaims = g.Sum(i => i.TotalAmount) // placeholder
+            })
+            .OrderBy(m => m.Date)
+            .ToList();
+
+        var report = new BillingReportDto
+        {
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            TotalInvoiced = totalInvoiced,
+            TotalPaid = totalPaid,
+            TotalOutstanding = totalOutstanding,
+            TotalInsuranceClaims = 0, // calculate from claims data
+            InvoiceCount = invoices.Count,
+            PatientCount = invoices.Select(i => i.PatientId).Distinct().Count(),
+            CollectionRate = collectionRate,
+            DailyMetrics = dailyMetrics
+        };
+
+        _logger.LogInformation("Billing report generated with {InvoiceCount} invoices", invoices.Count);
+
+        return report;
     }
 }

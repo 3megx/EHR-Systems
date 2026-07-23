@@ -4,7 +4,7 @@ using EHRPlatform.Services.Billing.Application.Reports.Responses;
 namespace EHRPlatform.Services.Billing.Features.Reports.Queries;
 
 /// <summary>
-/// Get patient invoices - CACHED query.
+/// Get patient invoices (reporting) - CACHED query.
 /// </summary>
 public record GetPatientInvoicesQuery : ICachedQuery<InvoiceListDto>
 {
@@ -17,7 +17,7 @@ public record GetPatientInvoicesQuery : ICachedQuery<InvoiceListDto>
 }
 
 /// <summary>
-/// Get outstanding balance - CACHED query.
+/// Get outstanding balance (reporting) - CACHED query.
 /// </summary>
 public record GetPatientOutstandingBalanceQuery : ICachedQuery<OutstandingBalanceDto>
 {
@@ -25,4 +25,16 @@ public record GetPatientOutstandingBalanceQuery : ICachedQuery<OutstandingBalanc
 
     public string CacheKey => $"balance_patient_{PatientId}";
     public int CacheDurationSeconds => 300;
+}
+
+/// <summary>
+/// Get billing report query.
+/// </summary>
+public record GetBillingReportQuery : ICachedQuery<BillingReportDto>
+{
+    public DateTime StartDate { get; init; }
+    public DateTime EndDate { get; init; }
+
+    public string CacheKey => $"report_billing_{StartDate:yyyyMMdd}_{EndDate:yyyyMMdd}";
+    public int CacheDurationSeconds => 3600;
 }

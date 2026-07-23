@@ -1,6 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Billing.Features.Invoicing.Dtos.Responses;
-using FluentValidation;
+using EHRPlatform.Services.Billing.Application.Invoicing.Responses;
 
 namespace EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 
@@ -24,34 +23,4 @@ public class LineItemRequest
     public string CPTCode { get; set; } = string.Empty;
     public decimal Quantity { get; set; }
     public decimal UnitPrice { get; set; }
-}
-
-public class CreateInvoiceCommandValidator : AbstractValidator<CreateInvoiceCommand>
-{
-    public CreateInvoiceCommandValidator()
-    {
-        RuleFor(x => x.PatientId).NotEmpty();
-        RuleFor(x => x.ServiceDate).LessThanOrEqualTo(DateTime.UtcNow);
-        RuleFor(x => x.LineItems).NotEmpty().WithMessage("At least one line item required");
-        RuleForEach(x => x.LineItems).SetValidator(new LineItemValidator());
-    }
-}
-
-public class LineItemValidator : AbstractValidator<LineItemRequest>
-{
-    public LineItemValidator()
-    {
-        RuleFor(x => x.Description).NotEmpty();
-        RuleFor(x => x.CPTCode).NotEmpty();
-        RuleFor(x => x.Quantity).GreaterThan(0);
-        RuleFor(x => x.UnitPrice).GreaterThan(0);
-    }
-}
-
-/// <summary>
-/// Invoice response DTO.
-/// </summary>
-public record InvoiceCommandDto
-{
-    public Guid Id { get; set; }
 }

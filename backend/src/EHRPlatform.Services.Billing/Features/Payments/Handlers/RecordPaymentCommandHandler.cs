@@ -3,6 +3,7 @@ using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Billing.Domain;
 using EHRPlatform.Services.Billing.Features.Payments.Commands;
+using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Billing.Features.Payments.Handlers;
 
@@ -55,5 +56,7 @@ public class RecordPaymentCommandHandler : ICommandHandler<RecordPaymentCommand>
         }, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Payment recorded for invoice {InvoiceId}", command.InvoiceId);
     }
 }
