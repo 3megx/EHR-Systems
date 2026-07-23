@@ -11,9 +11,7 @@ public class DashboardWidgetConfiguration : IEntityTypeConfiguration<DashboardWi
 {
     public void Configure(EntityTypeBuilder<DashboardWidget> entity)
     {
-        entity.HasKey(e => e.Id);
-        entity.HasOne(e => e.Dashboard).WithMany(d => d.DashboardWidgets).HasForeignKey(e => e.DashboardId);
-        entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-        entity.Property(e => e.WidgetType).HasMaxLength(50);
+        entity.HasKey(x => x.Id);
+        entity.HasOne(x => x.Dashboard).WithMany(d => d.DashboardWidgets).HasForeignKey(x => x.DashboardId);
     }
 }

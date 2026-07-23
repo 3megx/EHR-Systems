@@ -11,11 +11,9 @@ public class AnalyticsMetricConfiguration : IEntityTypeConfiguration<AnalyticsMe
 {
     public void Configure(EntityTypeBuilder<AnalyticsMetric> entity)
     {
-        entity.HasKey(e => e.Id);
-        entity.HasIndex(e => e.MetricName);
-        entity.HasIndex(e => e.Category);
-        entity.HasIndex(e => new { e.PeriodStart, e.PeriodEnd });
-        entity.Property(e => e.MetricName).IsRequired().HasMaxLength(200);
-        entity.Property(e => e.Category).HasMaxLength(100);
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => x.MetricName);
+        entity.HasIndex(x => x.Category);
+        entity.HasIndex(x => new { x.PeriodStart, x.PeriodEnd });
     }
 }

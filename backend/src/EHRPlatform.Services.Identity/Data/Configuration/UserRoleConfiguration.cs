@@ -5,7 +5,7 @@ using EHRPlatform.Services.Identity.Domain.Entities;
 namespace EHRPlatform.Services.Identity.Data.Configuration;
 
 /// <summary>
-/// Entity configuration for UserRole.
+/// Entity configuration for UserRole (junction table).
 /// </summary>
 public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
 {

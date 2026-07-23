@@ -13,8 +13,7 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
     {
         entity.HasKey(e => e.Id);
         entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-        entity.Property(e => e.Resource).IsRequired().HasMaxLength(100);
-        entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
-        entity.HasIndex(e => new { e.Resource, e.Action }).IsUnique();
+        entity.Property(e => e.Resource).IsRequired();
+        entity.Property(e => e.Action).IsRequired();
     }
 }

@@ -12,9 +12,7 @@ public class NotificationPreferenceConfiguration : IEntityTypeConfiguration<Noti
     public void Configure(EntityTypeBuilder<NotificationPreference> entity)
     {
         entity.HasKey(e => e.Id);
-        entity.HasIndex(e => e.RecipientId);
-        entity.Property(e => e.Channel).IsRequired().HasMaxLength(50);
-        entity.Property(e => e.NotificationType).IsRequired().HasMaxLength(50);
-        entity.Property(e => e.IsEnabled).HasDefaultValue(true);
+        entity.HasIndex(e => new { e.UserId, e.Channel, e.NotificationType }).IsUnique();
+        entity.Property(e => e.Channel).HasMaxLength(50);
     }
 }

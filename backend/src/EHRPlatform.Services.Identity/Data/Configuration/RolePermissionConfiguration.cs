@@ -5,7 +5,7 @@ using EHRPlatform.Services.Identity.Domain.Entities;
 namespace EHRPlatform.Services.Identity.Data.Configuration;
 
 /// <summary>
-/// Entity configuration for RolePermission.
+/// Entity configuration for RolePermission (junction table).
 /// </summary>
 public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermission>
 {

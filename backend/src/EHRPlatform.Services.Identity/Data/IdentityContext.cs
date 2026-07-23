@@ -24,78 +24,16 @@ public class IdentityContext : BaseDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // User configuration
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.PasswordHash).IsRequired();
-            entity.Property(e => e.PasswordSalt).IsRequired();
-        });
-
-        // Role configuration
-        modelBuilder.Entity<Role>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.HasIndex(e => e.Name).IsUnique();
-        });
-
-        // Permission configuration
-        modelBuilder.Entity<Permission>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Resource).IsRequired();
-            entity.Property(e => e.Action).IsRequired();
-        });
-
-        // UserRole configuration
-        modelBuilder.Entity<UserRole>(entity =>
-        {
-            entity.HasKey(e => new { e.UserId, e.RoleId });
-            entity.HasOne(e => e.User).WithMany(u => u.Roles).HasForeignKey(e => e.UserId);
-            entity.HasOne(e => e.Role).WithMany(r => r.Users).HasForeignKey(e => e.RoleId);
-        });
-
-        // RolePermission configuration
-        modelBuilder.Entity<RolePermission>(entity =>
-        {
-            entity.HasKey(e => new { e.RoleId, e.PermissionId });
-            entity.HasOne(e => e.Role).WithMany(r => r.Permissions).HasForeignKey(e => e.RoleId);
-            entity.HasOne(e => e.Permission).WithMany().HasForeignKey(e => e.PermissionId);
-        });
-
-        // RefreshToken configuration
-        modelBuilder.Entity<RefreshToken>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Token).IsUnique();
-            entity.HasOne(e => e.User).WithMany(u => u.RefreshTokens).HasForeignKey(e => e.UserId);
-        });
-
-        // LoginAudit configuration
-        modelBuilder.Entity<LoginAudit>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => new { e.UserId, e.CreatedAt });
-            entity.Property(e => e.Email).HasMaxLength(255);
-        });
-
-        // Seed default roles
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityContext).Assembly);
         SeedDefaultRoles(modelBuilder);
     }
 
     private void SeedDefaultRoles(ModelBuilder modelBuilder)
     {
-        var adminRoleId = Guid.NewGuid();
-        var doctorRoleId = Guid.NewGuid();
-        var nurseRoleId = Guid.NewGuid();
-        var patientRoleId = Guid.NewGuid();
+        var adminRoleId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var doctorRoleId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var nurseRoleId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var patientRoleId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
         modelBuilder.Entity<Role>().HasData(
             new Role { Id = adminRoleId, Name = "Admin", Description = "System administrator" },

@@ -11,9 +11,8 @@ public class ReportExecutionConfiguration : IEntityTypeConfiguration<ReportExecu
 {
     public void Configure(EntityTypeBuilder<ReportExecution> entity)
     {
-        entity.HasKey(e => e.Id);
-        entity.HasOne(e => e.Report).WithMany(r => r.Executions).HasForeignKey(e => e.ReportId);
-        entity.HasIndex(e => e.ExecutedAt).IsDescending();
-        entity.Property(e => e.Status).HasMaxLength(50);
+        entity.HasKey(x => x.Id);
+        entity.HasOne(x => x.Report).WithMany(r => r.Executions).HasForeignKey(x => x.ReportId);
+        entity.HasIndex(x => x.ExecutedAt).IsDescending();
     }
 }

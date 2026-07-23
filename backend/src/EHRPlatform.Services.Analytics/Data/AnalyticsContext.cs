@@ -22,46 +22,6 @@ public class AnalyticsContext : BaseDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<AnalyticsMetric>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.MetricName);
-            e.HasIndex(x => x.Category);
-            e.HasIndex(x => new { x.PeriodStart, x.PeriodEnd });
-        });
-
-        modelBuilder.Entity<Dashboard>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.UserId);
-        });
-
-        modelBuilder.Entity<DashboardWidget>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasOne(x => x.Dashboard).WithMany(d => d.DashboardWidgets).HasForeignKey(x => x.DashboardId);
-        });
-
-        modelBuilder.Entity<Report>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.UserId);
-            e.HasIndex(x => x.Schedule);
-        });
-
-        modelBuilder.Entity<ReportExecution>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasOne(x => x.Report).WithMany(r => r.Executions).HasForeignKey(x => x.ReportId);
-            e.HasIndex(x => x.ExecutedAt).IsDescending();
-        });
-
-        modelBuilder.Entity<EventMetric>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.EventType);
-            e.HasIndex(x => x.OccurredAt).IsDescending();
-        });
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AnalyticsContext).Assembly);
     }
 }

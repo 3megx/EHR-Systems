@@ -11,11 +11,9 @@ public class AuditLogExportConfiguration : IEntityTypeConfiguration<AuditLogExpo
 {
     public void Configure(EntityTypeBuilder<AuditLogExport> entity)
     {
-        entity.HasKey(e => e.Id);
-        entity.HasIndex(e => e.ExportedAt).IsDescending();
-        entity.HasIndex(e => e.Status);
-        entity.Property(e => e.FileHash).IsRequired();
-        entity.Property(e => e.Status).HasMaxLength(50);
-        entity.Property(e => e.ExportedBy).HasMaxLength(255);
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => x.ExportedAt).IsDescending();
+        entity.HasIndex(x => x.Status);
+        entity.Property(x => x.FileHash).IsRequired();
     }
 }

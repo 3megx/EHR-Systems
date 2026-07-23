@@ -11,9 +11,8 @@ public class EventMetricConfiguration : IEntityTypeConfiguration<EventMetric>
 {
     public void Configure(EntityTypeBuilder<EventMetric> entity)
     {
-        entity.HasKey(e => e.Id);
-        entity.HasIndex(e => e.EventType);
-        entity.HasIndex(e => e.OccurredAt).IsDescending();
-        entity.Property(e => e.EventType).IsRequired().HasMaxLength(100);
+        entity.HasKey(x => x.Id);
+        entity.HasIndex(x => x.EventType);
+        entity.HasIndex(x => x.OccurredAt).IsDescending();
     }
 }

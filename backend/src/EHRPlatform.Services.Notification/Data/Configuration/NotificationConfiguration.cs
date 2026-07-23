@@ -14,10 +14,10 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         entity.HasKey(e => e.Id);
         entity.HasIndex(e => e.RecipientId);
         entity.HasIndex(e => e.Status);
+        entity.HasIndex(e => e.Channel);
         entity.HasIndex(e => e.CreatedAt).IsDescending();
-        entity.Property(e => e.Channel).IsRequired().HasMaxLength(50);
-        entity.Property(e => e.NotificationType).IsRequired().HasMaxLength(50);
-        entity.Property(e => e.Status).HasMaxLength(50).HasDefaultValue("Pending");
-        entity.Property(e => e.Subject).HasMaxLength(500);
+        entity.HasIndex(e => e.ScheduledFor);
+        entity.Property(e => e.Channel).HasMaxLength(50);
+        entity.Property(e => e.Status).HasMaxLength(50);
     }
 }

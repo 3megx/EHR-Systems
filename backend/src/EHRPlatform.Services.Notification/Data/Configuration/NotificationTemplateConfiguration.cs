@@ -12,9 +12,8 @@ public class NotificationTemplateConfiguration : IEntityTypeConfiguration<Notifi
     public void Configure(EntityTypeBuilder<NotificationTemplate> entity)
     {
         entity.HasKey(e => e.Id);
-        entity.HasIndex(e => e.TemplateCode).IsUnique();
-        entity.Property(e => e.TemplateCode).IsRequired().HasMaxLength(100);
-        entity.Property(e => e.TemplateName).IsRequired().HasMaxLength(200);
-        entity.Property(e => e.Channel).IsRequired().HasMaxLength(50);
+        entity.HasIndex(e => e.Name).IsUnique();
+        entity.Property(e => e.Channel).HasMaxLength(50);
+        entity.Property(e => e.Subject).HasMaxLength(255);
     }
 }

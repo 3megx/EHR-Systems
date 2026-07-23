@@ -14,6 +14,5 @@ public class LoginAuditConfiguration : IEntityTypeConfiguration<LoginAudit>
         entity.HasKey(e => e.Id);
         entity.HasIndex(e => new { e.UserId, e.CreatedAt });
         entity.Property(e => e.Email).HasMaxLength(255);
-        entity.Property(e => e.Status).HasMaxLength(50);
     }
 }
