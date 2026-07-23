@@ -2,7 +2,7 @@ namespace EHRPlatform.Services.Billing.Application.Reports.Responses;
 
 /// <summary>
 /// Billing report DTO.
-/// Contains aggregate billing metrics and information.
+/// Contains aggregate billing metrics and comprehensive financial information.
 /// </summary>
 public class BillingReportDto
 {
@@ -18,10 +18,3 @@ public class BillingReportDto
     public List<BillingMetricDto> DailyMetrics { get; set; } = new();
 }
 
-public class BillingMetricDto
-{
-    public DateTime Date { get; set; }
-    public decimal Invoiced { get; set; }
-    public decimal Paid { get; set; }
-    public decimal InsuranceClaims { get; set; }
-}

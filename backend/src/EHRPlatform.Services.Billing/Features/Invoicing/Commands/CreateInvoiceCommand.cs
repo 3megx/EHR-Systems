@@ -5,6 +5,7 @@ namespace EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 
 /// <summary>
 /// Create invoice command.
+/// Initiates creation of a new invoice with line items.
 /// </summary>
 public record CreateInvoiceCommand : ICommand<InvoiceResponseDto>
 {
@@ -17,10 +18,3 @@ public record CreateInvoiceCommand : ICommand<InvoiceResponseDto>
     public string? Notes { get; init; }
 }
 
-public class LineItemRequest
-{
-    public string Description { get; set; } = string.Empty;
-    public string CPTCode { get; set; } = string.Empty;
-    public decimal Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-}

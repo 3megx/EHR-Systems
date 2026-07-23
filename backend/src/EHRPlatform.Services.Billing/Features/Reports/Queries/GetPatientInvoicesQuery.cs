@@ -16,13 +16,3 @@ public record GetPatientInvoicesQuery : ICachedQuery<InvoiceListDto>
     public int CacheDurationSeconds => 600;
 }
 
-/// <summary>
-/// Get outstanding balance - CACHED query.
-/// </summary>
-public record GetPatientOutstandingBalanceQuery : ICachedQuery<OutstandingBalanceDto>
-{
-    public Guid PatientId { get; init; }
-
-    public string CacheKey => $"balance_patient_{PatientId}";
-    public int CacheDurationSeconds => 300;
-}
