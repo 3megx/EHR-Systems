@@ -1,6 +1,7 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Analytics.Features.Analytics.Domain;
+using EHRPlatform.Services.Analytics.Features.Analytics.Dtos.Responses;
 using Mapster;
 
 namespace EHRPlatform.Services.Analytics.Features.Analytics.Queries;
@@ -8,7 +9,7 @@ namespace EHRPlatform.Services.Analytics.Features.Analytics.Queries;
 /// <summary>
 /// Get metrics handler.
 /// </summary>
-public class GetMetricsQueryHandler : IQueryHandler<GetMetricsQuery, MetricsResponseDto>
+public class GetMetricsQueryHandler : IQueryHandler<GetMetricsQuery, AnalyticsMetricResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetMetricsQueryHandler> _logger;
@@ -19,7 +20,7 @@ public class GetMetricsQueryHandler : IQueryHandler<GetMetricsQuery, MetricsResp
         _logger = logger;
     }
 
-    public async Task<MetricsResponseDto> Handle(GetMetricsQuery request, CancellationToken cancellationToken)
+    public async Task<AnalyticsMetricResponseDto> Handle(GetMetricsQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching metrics for {Category}", request.Category);
 
@@ -31,7 +32,7 @@ public class GetMetricsQueryHandler : IQueryHandler<GetMetricsQuery, MetricsResp
                 m.PeriodEnd <= request.PeriodEnd),
             cancellationToken);
 
-        return new MetricsResponseDto
+        return new AnalyticsMetricResponseDto
         {
             Category = request.Category,
             PeriodStart = request.PeriodStart,
@@ -49,7 +50,7 @@ public class GetMetricsQueryHandler : IQueryHandler<GetMetricsQuery, MetricsResp
 /// <summary>
 /// Get KPI summary handler.
 /// </summary>
-public class GetKPISummaryQueryHandler : IQueryHandler<GetKPISummaryQuery, KPISummaryDto>
+public class GetKPISummaryQueryHandler : IQueryHandler<GetKPISummaryQuery, AnalyticsMetricListDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetKPISummaryQueryHandler> _logger;
@@ -60,7 +61,7 @@ public class GetKPISummaryQueryHandler : IQueryHandler<GetKPISummaryQuery, KPISu
         _logger = logger;
     }
 
-    public async Task<KPISummaryDto> Handle(GetKPISummaryQuery request, CancellationToken cancellationToken)
+    public async Task<AnalyticsMetricListDto> Handle(GetKPISummaryQuery request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Calculating KPI summary");
 
@@ -72,7 +73,7 @@ public class GetKPISummaryQueryHandler : IQueryHandler<GetKPISummaryQuery, KPISu
             q => q.Where(m => m.PeriodStart >= periodStart && m.PeriodEnd <= periodEnd),
             cancellationToken);
 
-        var summary = new KPISummaryDto
+        var summary = new AnalyticsMetricListDto
         {
             PatientVolume = metrics.Where(m => m.MetricName.Contains("patient")).Sum(m => m.Value),
             AppointmentUtilization = metrics.Where(m => m.MetricName.Contains("appointment")).Sum(m => m.Value) / 100m,
@@ -112,7 +113,7 @@ public class GetUserDashboardQueryHandler : IQueryHandler<GetUserDashboardQuery,
             throw new InvalidOperationException($"Dashboard {request.DashboardId} not found");
 
         var dto = dashboard.Adapt<DashboardResponseDto>();
-        dto.Widgets = dashboard.DashboardWidgets.Select(w => new WidgetDto
+        dto.Widgets = dashboard.DashboardWidgets.Select(w => new DashboardWidgetDto
         {
             Id = w.Id,
             WidgetType = w.WidgetType,
@@ -154,7 +155,7 @@ public class GetUserDashboardsQueryHandler : IQueryHandler<GetUserDashboardsQuer
             Name = d.Name,
             Description = d.Description,
             IsDefault = d.IsDefault,
-            Widgets = d.DashboardWidgets.Select(w => new WidgetDto
+            Widgets = d.DashboardWidgets.Select(w => new DashboardWidgetDto
             {
                 Id = w.Id,
                 WidgetType = w.WidgetType,

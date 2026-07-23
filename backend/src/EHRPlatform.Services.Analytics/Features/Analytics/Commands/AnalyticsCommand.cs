@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Analytics.Features.Analytics.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Analytics.Features.Analytics.Commands;
@@ -27,7 +28,7 @@ public record AggregateMetricsCommand : ICommand
 /// <summary>
 /// Create dashboard command.
 /// </summary>
-public record CreateDashboardCommand : ICommand<DashboardResponseDto>
+public record CreateDashboardCommand : ICommand<DashboardDetailedDto>
 {
     public Guid UserId { get; init; }
     public string Name { get; init; } = string.Empty;
@@ -49,7 +50,7 @@ public record AddDashboardWidgetCommand : ICommand
 /// <summary>
 /// Create report template command.
 /// </summary>
-public record CreateReportCommand : ICommand<ReportResponseDto>
+public record CreateReportCommand : ICommand<ReportDetailedDto>
 {
     public Guid UserId { get; init; }
     public string Name { get; init; } = string.Empty;
@@ -62,57 +63,7 @@ public record CreateReportCommand : ICommand<ReportResponseDto>
 /// <summary>
 /// Generate report command.
 /// </summary>
-public record GenerateReportCommand : ICommand<ReportExecutionResponseDto>
+public record GenerateReportCommand : ICommand<ReportExecutionDto>
 {
     public Guid ReportId { get; init; }
-}
-
-/// <summary>
-/// Dashboard response DTO.
-/// </summary>
-public class DashboardResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public bool IsDefault { get; set; }
-    public List<WidgetDto> Widgets { get; set; } = new();
-}
-
-public class WidgetDto
-{
-    public Guid Id { get; set; }
-    public string WidgetType { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string MetricName { get; set; } = string.Empty;
-    public int Position { get; set; }
-}
-
-/// <summary>
-/// Report response DTO.
-/// </summary>
-public class ReportResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string ReportType { get; set; } = string.Empty;
-    public List<string> Metrics { get; set; } = new();
-    public string Schedule { get; set; } = string.Empty;
-    public DateTime? LastGeneratedAt { get; set; }
-}
-
-/// <summary>
-/// Report execution response DTO.
-/// </summary>
-public class ReportExecutionResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid ReportId { get; set; }
-    public DateTime ExecutedAt { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public string? OutputPath { get; set; }
-    public long? FileSize { get; set; }
-    public int RecordCount { get; set; }
 }

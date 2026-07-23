@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Commands;
@@ -83,42 +84,4 @@ public class SetProviderAvailabilityCommandValidator : AbstractValidator<SetProv
         RuleFor(x => x.SlotStart).GreaterThan(DateTime.UtcNow);
         RuleFor(x => x.SlotEnd).GreaterThan(x => x.SlotStart);
     }
-}
-
-/// <summary>
-/// Appointment response DTO.
-/// </summary>
-public class AppointmentResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public DateTime ScheduledStart { get; set; }
-    public DateTime ScheduledEnd { get; set; }
-    public string AppointmentType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string? ReasonForVisit { get; set; }
-    public string? Notes { get; set; }
-    public int DurationMinutes { get; set; }
-    public bool ReminderSent { get; set; }
-    public DateTime? ConfirmedAt { get; set; }
-    public DateTime? CancelledAt { get; set; }
-    public string? CancellationReason { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-/// <summary>
-/// Provider availability DTO.
-/// </summary>
-public class ProviderAvailabilityDto
-{
-    public Guid Id { get; set; }
-    public Guid ProviderId { get; set; }
-    public DateTime SlotStart { get; set; }
-    public DateTime SlotEnd { get; set; }
-    public bool IsRecurring { get; set; }
-    public string? RecurrencePattern { get; set; }
-    public int? MaxAppointmentsPerSlot { get; set; }
-    public int CurrentBookings { get; set; }
-    public bool HasAvailability { get; set; }
 }

@@ -1,6 +1,7 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Domain;
+using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Dtos.Responses;
 using Microsoft.EntityFrameworkCore;
 using Mapster;
 
@@ -71,7 +72,7 @@ public class GetClinicalNoteQueryHandler : IQueryHandler<GetClinicalNoteQuery, C
 /// <summary>
 /// Get patient clinical timeline handler.
 /// </summary>
-public class GetPatientClinicalTimelineQueryHandler : IQueryHandler<GetPatientClinicalTimelineQuery, ClinicalTimelineDto>
+public class GetPatientClinicalTimelineQueryHandler : IQueryHandler<GetPatientClinicalTimelineQuery, ClinicalNoteListDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetPatientClinicalTimelineQueryHandler> _logger;
@@ -82,7 +83,7 @@ public class GetPatientClinicalTimelineQueryHandler : IQueryHandler<GetPatientCl
         _logger = logger;
     }
 
-    public async Task<ClinicalTimelineDto> Handle(
+    public async Task<ClinicalNoteListDto> Handle(
         GetPatientClinicalTimelineQuery request,
         CancellationToken cancellationToken)
     {
@@ -132,7 +133,7 @@ public class GetPatientClinicalTimelineQueryHandler : IQueryHandler<GetPatientCl
                 : null
         }).ToList();
 
-        return new ClinicalTimelineDto
+        return new ClinicalNoteListDto
         {
             PatientId = request.PatientId,
             Notes = timelineItems,
@@ -146,7 +147,7 @@ public class GetPatientClinicalTimelineQueryHandler : IQueryHandler<GetPatientCl
 /// <summary>
 /// Get vital signs timeline handler.
 /// </summary>
-public class GetVitalSignsTimelineQueryHandler : IQueryHandler<GetVitalSignsTimelineQuery, VitalSignsTimelineDto>
+public class GetVitalSignsTimelineQueryHandler : IQueryHandler<GetVitalSignsTimelineQuery, VitalSignsDetailDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetVitalSignsTimelineQueryHandler> _logger;
@@ -157,7 +158,7 @@ public class GetVitalSignsTimelineQueryHandler : IQueryHandler<GetVitalSignsTime
         _logger = logger;
     }
 
-    public async Task<VitalSignsTimelineDto> Handle(
+    public async Task<VitalSignsDetailDto> Handle(
         GetVitalSignsTimelineQuery request,
         CancellationToken cancellationToken)
     {
@@ -195,7 +196,7 @@ public class GetVitalSignsTimelineQueryHandler : IQueryHandler<GetVitalSignsTime
             AverageHeartRate = allVitals.Any() ? (int)allVitals.Average(v => v.HeartRate) : 0
         };
 
-        return new VitalSignsTimelineDto
+        return new VitalSignsDetailDto
         {
             PatientId = request.PatientId,
             Records = records,
@@ -207,7 +208,7 @@ public class GetVitalSignsTimelineQueryHandler : IQueryHandler<GetVitalSignsTime
 /// <summary>
 /// Get diagnosis history handler.
 /// </summary>
-public class GetDiagnosisHistoryQueryHandler : IQueryHandler<GetDiagnosisHistoryQuery, DiagnosisHistoryDto>
+public class GetDiagnosisHistoryQueryHandler : IQueryHandler<GetDiagnosisHistoryQuery, DiagnosisDetailDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetDiagnosisHistoryQueryHandler> _logger;
@@ -218,7 +219,7 @@ public class GetDiagnosisHistoryQueryHandler : IQueryHandler<GetDiagnosisHistory
         _logger = logger;
     }
 
-    public async Task<DiagnosisHistoryDto> Handle(
+    public async Task<DiagnosisDetailDto> Handle(
         GetDiagnosisHistoryQuery request,
         CancellationToken cancellationToken)
     {
@@ -243,7 +244,7 @@ public class GetDiagnosisHistoryQueryHandler : IQueryHandler<GetDiagnosisHistory
             .OrderByDescending(d => d.RecordedDate)
             .ToList();
 
-        return new DiagnosisHistoryDto
+        return new DiagnosisDetailDto
         {
             PatientId = request.PatientId,
             Diagnoses = diagnoses

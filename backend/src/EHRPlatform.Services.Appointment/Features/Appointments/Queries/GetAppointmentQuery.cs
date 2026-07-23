@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Queries;
 
@@ -55,76 +56,4 @@ public record GetProviderAvailabilityQuery : ICachedQuery<ProviderAvailabilityLi
 
     public string CacheKey => $"availability_{ProviderId}_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}";
     public int CacheDurationSeconds => 300;
-}
-
-/// <summary>
-/// Appointment list response.
-/// </summary>
-public class AppointmentListDto
-{
-    public List<AppointmentResponseDto> Items { get; set; } = new();
-    public int Total { get; set; }
-    public int PageNumber { get; set; }
-    public int PageSize { get; set; }
-}
-
-/// <summary>
-/// Appointment response DTO.
-/// </summary>
-public class AppointmentResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public DateTime ScheduledStart { get; set; }
-    public DateTime ScheduledEnd { get; set; }
-    public string AppointmentType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string? ReasonForVisit { get; set; }
-    public string? Notes { get; set; }
-    public int DurationMinutes { get; set; }
-    public bool ReminderSent { get; set; }
-    public DateTime? ConfirmedAt { get; set; }
-    public DateTime? CancelledAt { get; set; }
-    public string? CancellationReason { get; set; }
-}
-
-/// <summary>
-/// Provider appointment calendar for specific date.
-/// </summary>
-public class ProviderAppointmentCalendarDto
-{
-    public Guid ProviderId { get; set; }
-    public DateTime Date { get; set; }
-    public List<AppointmentSlotDto> Slots { get; set; } = new();
-}
-
-public class AppointmentSlotDto
-{
-    public DateTime Start { get; set; }
-    public DateTime End { get; set; }
-    public string Status { get; set; } = string.Empty; // Available, Booked, Blocked
-    public Guid? AppointmentId { get; set; }
-    public Guid? PatientId { get; set; }
-}
-
-/// <summary>
-/// Provider availability slots response.
-/// </summary>
-public class ProviderAvailabilityListDto
-{
-    public Guid ProviderId { get; set; }
-    public List<ProviderAvailabilitySlotDto> Slots { get; set; } = new();
-}
-
-public class ProviderAvailabilitySlotDto
-{
-    public Guid Id { get; set; }
-    public DateTime SlotStart { get; set; }
-    public DateTime SlotEnd { get; set; }
-    public bool IsRecurring { get; set; }
-    public string? RecurrencePattern { get; set; }
-    public int? MaxAppointmentsPerSlot { get; set; }
-    public int CurrentBookings { get; set; }
-    public bool HasAvailability { get; set; }
 }

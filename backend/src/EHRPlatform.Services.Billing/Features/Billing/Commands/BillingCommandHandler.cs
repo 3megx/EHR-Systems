@@ -2,26 +2,31 @@ using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Billing.Features.Billing.Domain;
-using Mapster;
+using EHRPlatform.Services.Billing.Features.Billing.Dtos.Responses;
+using EHRPlatform.Services.Billing.Mappings;
 
 namespace EHRPlatform.Services.Billing.Features.Billing.Commands;
 
 /// <summary>
 /// Create invoice handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class CreateInvoiceCommandHandler : ICommandHandler<CreateInvoiceCommand, InvoiceResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOutboxRepository _outbox;
+    private readonly InvoiceMapper _mapper;
     private readonly ILogger<CreateInvoiceCommandHandler> _logger;
 
     public CreateInvoiceCommandHandler(
         IUnitOfWork unitOfWork,
         IOutboxRepository outbox,
+        InvoiceMapper mapper,
         ILogger<CreateInvoiceCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _outbox = outbox;
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger;
     }
 
@@ -75,53 +80,22 @@ public class CreateInvoiceCommandHandler : ICommandHandler<CreateInvoiceCommand,
 
         _logger.LogInformation("Invoice created {InvoiceId} (#{Number})", invoice.Id, invoiceNumber);
 
-        return MapToDto(invoice);
+        // Delegate mapping to mapper
+        return _mapper.MapToResponseDto(invoice);
     }
 
-    private string GenerateInvoiceNumber()
+    private static string GenerateInvoiceNumber()
     {
         // Format: INV-YYYYMMDD-XXXXXX
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
         var random = new Random().Next(100000, 999999);
         return $"INV-{timestamp}-{random}";
     }
-
-    private InvoiceResponseDto MapToDto(Invoice invoice)
-    {
-        var dto = invoice.Adapt<InvoiceResponseDto>();
-        dto.BalanceDue = invoice.BalanceDue;
-        dto.LineItems = invoice.LineItems.Select(l => new LineItemDto
-        {
-            Id = l.Id,
-            Description = l.Description,
-            CPTCode = l.CPTCode,
-            Quantity = l.Quantity,
-            UnitPrice = l.UnitPrice,
-            Amount = l.Amount
-        }).ToList();
-        dto.Payments = invoice.Payments.Select(p => new PaymentDto
-        {
-            Id = p.Id,
-            Amount = p.Amount,
-            Method = p.Method,
-            Reference = p.Reference,
-            ReceivedAt = p.ReceivedAt
-        }).ToList();
-        dto.Claims = invoice.InsuranceClaims.Select(c => new ClaimDto
-        {
-            Id = c.Id,
-            InsuranceProvider = c.InsuranceProvider,
-            ClaimNumber = c.ClaimNumber,
-            Status = c.Status,
-            Amount = c.Amount,
-            ApprovedAmount = c.ApprovedAmount
-        }).ToList();
-        return dto;
-    }
 }
 
 /// <summary>
 /// Record payment handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class RecordPaymentCommandHandler : ICommandHandler<RecordPaymentCommand>
 {
@@ -173,6 +147,7 @@ public class RecordPaymentCommandHandler : ICommandHandler<RecordPaymentCommand>
 
 /// <summary>
 /// Submit to insurance handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class SubmitToInsuranceCommandHandler : ICommandHandler<SubmitToInsuranceCommand>
 {
@@ -223,6 +198,7 @@ public class SubmitToInsuranceCommandHandler : ICommandHandler<SubmitToInsurance
 
 /// <summary>
 /// Cancel invoice handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class CancelInvoiceCommandHandler : ICommandHandler<CancelInvoiceCommand>
 {

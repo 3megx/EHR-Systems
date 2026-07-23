@@ -1,6 +1,7 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Prescription.Features.Prescriptions.Domain;
+using EHRPlatform.Services.Prescription.Features.Prescriptions.Dtos.Responses;
 using Mapster;
 
 namespace EHRPlatform.Services.Prescription.Features.Prescriptions.Queries;

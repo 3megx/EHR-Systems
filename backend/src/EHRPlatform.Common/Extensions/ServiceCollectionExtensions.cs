@@ -28,8 +28,10 @@ public static class ServiceCollectionExtensions
         // Register options
         services.AddSingleton(options);
 
-        // Add Mapster
+        // Add Mapster with auto-discovery of mapping profiles
         services.AddMapster();
+        services.AddMapsterProfiles(AppDomain.CurrentDomain.GetAssemblies());
+        services.AddServiceMappers(AppDomain.CurrentDomain.GetAssemblies());
 
         // Add validation
         services.AddValidation();

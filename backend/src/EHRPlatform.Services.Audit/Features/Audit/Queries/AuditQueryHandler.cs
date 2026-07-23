@@ -1,6 +1,7 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Audit.Features.Audit.Domain;
+using EHRPlatform.Services.Audit.Features.Audit.Dtos.Responses;
 using Mapster;
 
 namespace EHRPlatform.Services.Audit.Features.Audit.Queries;
@@ -44,7 +45,7 @@ public class GetResourceAuditTrailQueryHandler : IQueryHandler<GetResourceAuditT
         {
             ResourceType = request.ResourceType,
             ResourceId = request.ResourceId,
-            Entries = entries.Select(e => new AuditEntryDto
+            Entries = entries.Select(e => new AuditEntryResponseDto
             {
                 Id = e.Id,
                 UserId = e.UserId,
@@ -67,7 +68,7 @@ public class GetResourceAuditTrailQueryHandler : IQueryHandler<GetResourceAuditT
 /// <summary>
 /// Get user audit activity handler.
 /// </summary>
-public class GetUserAuditActivityQueryHandler : IQueryHandler<GetUserAuditActivityQuery, UserAuditActivityDto>
+public class GetUserAuditActivityQueryHandler : IQueryHandler<GetUserAuditActivityQuery, AccessLogDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<GetUserAuditActivityQueryHandler> _logger;
@@ -78,7 +79,7 @@ public class GetUserAuditActivityQueryHandler : IQueryHandler<GetUserAuditActivi
         _logger = logger;
     }
 
-    public async Task<UserAuditActivityDto> Handle(
+    public async Task<AccessLogDto> Handle(
         GetUserAuditActivityQuery request,
         CancellationToken cancellationToken)
     {
@@ -103,7 +104,7 @@ public class GetUserAuditActivityQueryHandler : IQueryHandler<GetUserAuditActivi
             })
             .ToList();
 
-        return new UserAuditActivityDto
+        return new AccessLogDto
         {
             UserId = request.UserId,
             UserEmail = userEmail,

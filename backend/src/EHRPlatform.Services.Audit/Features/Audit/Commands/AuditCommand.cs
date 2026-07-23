@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Audit.Features.Audit.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Audit.Features.Audit.Commands;
@@ -70,35 +71,4 @@ public record ExportAuditLogsCommand : ICommand<AuditExportResponseDto>
     public DateTime PeriodEnd { get; init; }
     public string Format { get; init; } = "JSON"; // PDF, CSV, JSON
     public bool EncryptFile { get; init; }
-}
-
-/// <summary>
-/// Compliance report response DTO.
-/// </summary>
-public class ComplianceReportResponseDto
-{
-    public Guid Id { get; set; }
-    public DateTime PeriodStart { get; set; }
-    public DateTime PeriodEnd { get; set; }
-    public int TotalActions { get; set; }
-    public int FailedActions { get; set; }
-    public int DataAccess { get; set; }
-    public int DataChanges { get; set; }
-    public int UnauthorizedAttempts { get; set; }
-    public List<string> PiiAccessed { get; set; } = new();
-    public DateTime GeneratedAt { get; set; }
-}
-
-/// <summary>
-/// Audit export response DTO.
-/// </summary>
-public class AuditExportResponseDto
-{
-    public Guid Id { get; set; }
-    public DateTime ExportedAt { get; set; }
-    public int RecordCount { get; set; }
-    public string Format { get; set; } = string.Empty;
-    public bool IsEncrypted { get; set; }
-    public string? FilePath { get; set; }
-    public string Status { get; set; } = string.Empty;
 }

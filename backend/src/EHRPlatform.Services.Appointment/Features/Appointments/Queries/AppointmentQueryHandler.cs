@@ -1,21 +1,28 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Appointment.Features.Appointments.Domain;
-using Mapster;
+using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
+using EHRPlatform.Services.Appointment.Mappings;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Queries;
 
 /// <summary>
 /// Get appointment by ID handler.
+/// Delegates all mapping to AppointmentMapper (SRP).
 /// </summary>
 public class GetAppointmentQueryHandler : IQueryHandler<GetAppointmentQuery, AppointmentResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<GetAppointmentQueryHandler> _logger;
 
-    public GetAppointmentQueryHandler(IUnitOfWork unitOfWork, ILogger<GetAppointmentQueryHandler> logger)
+    public GetAppointmentQueryHandler(
+        IUnitOfWork unitOfWork,
+        AppointmentMapper mapper,
+        ILogger<GetAppointmentQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -33,21 +40,27 @@ public class GetAppointmentQueryHandler : IQueryHandler<GetAppointmentQuery, App
         if (appointment == null)
             throw new InvalidOperationException($"Appointment {request.AppointmentId} not found");
 
-        return appointment.Adapt<AppointmentResponseDto>();
+        return _mapper.MapToResponseDto(appointment);
     }
 }
 
 /// <summary>
 /// Get patient appointments handler.
+/// Delegates pagination mapping to AppointmentMapper (SRP).
 /// </summary>
 public class GetPatientAppointmentsQueryHandler : IQueryHandler<GetPatientAppointmentsQuery, AppointmentListDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<GetPatientAppointmentsQueryHandler> _logger;
 
-    public GetPatientAppointmentsQueryHandler(IUnitOfWork unitOfWork, ILogger<GetPatientAppointmentsQueryHandler> logger)
+    public GetPatientAppointmentsQueryHandler(
+        IUnitOfWork unitOfWork,
+        AppointmentMapper mapper,
+        ILogger<GetPatientAppointmentsQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -59,12 +72,6 @@ public class GetPatientAppointmentsQueryHandler : IQueryHandler<GetPatientAppoin
 
         var repo = _unitOfWork.Repository<Domain.Appointment>();
         var skip = (request.PageNumber - 1) * request.PageSize;
-
-        var query = repo.Query()
-            .Where(a => a.PatientId == request.PatientId)
-            .Where(a => a.ScheduledStart >= (request.FromDate ?? DateTime.MinValue))
-            .Where(a => a.ScheduledStart <= (request.ToDate ?? DateTime.MaxValue))
-            .OrderByDescending(a => a.ScheduledStart);
 
         var total = await repo.CountAsync(
             q => q.Where(a => a.PatientId == request.PatientId),
@@ -79,27 +86,28 @@ public class GetPatientAppointmentsQueryHandler : IQueryHandler<GetPatientAppoin
                 .Take(request.PageSize),
             cancellationToken);
 
-        return new AppointmentListDto
-        {
-            Items = appointments.Adapt<List<AppointmentResponseDto>>(),
-            Total = total,
-            PageNumber = request.PageNumber,
-            PageSize = request.PageSize
-        };
+        return _mapper.MapToListDto(appointments, total, request.PageNumber, request.PageSize);
     }
 }
 
 /// <summary>
 /// Get provider appointments calendar handler.
+/// Delegates calendar and slot mapping to AppointmentMapper (SRP).
+/// Eliminates inline slot DTO creation.
 /// </summary>
 public class GetProviderAppointmentsQueryHandler : IQueryHandler<GetProviderAppointmentsQuery, ProviderAppointmentCalendarDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<GetProviderAppointmentsQueryHandler> _logger;
 
-    public GetProviderAppointmentsQueryHandler(IUnitOfWork unitOfWork, ILogger<GetProviderAppointmentsQueryHandler> logger)
+    public GetProviderAppointmentsQueryHandler(
+        IUnitOfWork unitOfWork,
+        AppointmentMapper mapper,
+        ILogger<GetProviderAppointmentsQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -121,35 +129,28 @@ public class GetProviderAppointmentsQueryHandler : IQueryHandler<GetProviderAppo
                 .OrderBy(a => a.ScheduledStart),
             cancellationToken);
 
-        var slots = appointments.Select(a => new AppointmentSlotDto
-        {
-            Start = a.ScheduledStart,
-            End = a.ScheduledEnd,
-            Status = a.Status == "Cancelled" ? "Available" : (a.Status == "Scheduled" || a.Status == "Confirmed" ? "Booked" : "Blocked"),
-            AppointmentId = a.Id,
-            PatientId = a.PatientId
-        }).ToList();
-
-        return new ProviderAppointmentCalendarDto
-        {
-            ProviderId = request.ProviderId,
-            Date = request.Date,
-            Slots = slots
-        };
+        return _mapper.MapToProviderCalendarDto(request.ProviderId, request.Date, appointments);
     }
 }
 
 /// <summary>
 /// Get provider availability slots handler.
+/// Delegates availability mapping to AppointmentMapper (SRP).
+/// Eliminates inline ProviderAvailabilitySlotDto creation.
 /// </summary>
 public class GetProviderAvailabilityQueryHandler : IQueryHandler<GetProviderAvailabilityQuery, ProviderAvailabilityListDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<GetProviderAvailabilityQueryHandler> _logger;
 
-    public GetProviderAvailabilityQueryHandler(IUnitOfWork unitOfWork, ILogger<GetProviderAvailabilityQueryHandler> logger)
+    public GetProviderAvailabilityQueryHandler(
+        IUnitOfWork unitOfWork,
+        AppointmentMapper mapper,
+        ILogger<GetProviderAvailabilityQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -171,20 +172,6 @@ public class GetProviderAvailabilityQueryHandler : IQueryHandler<GetProviderAvai
                 .OrderBy(a => a.SlotStart),
             cancellationToken);
 
-        return new ProviderAvailabilityListDto
-        {
-            ProviderId = request.ProviderId,
-            Slots = slots.Select(s => new ProviderAvailabilitySlotDto
-            {
-                Id = s.Id,
-                SlotStart = s.SlotStart,
-                SlotEnd = s.SlotEnd,
-                IsRecurring = s.IsRecurring,
-                RecurrencePattern = s.RecurrencePattern,
-                MaxAppointmentsPerSlot = s.MaxAppointmentsPerSlot,
-                CurrentBookings = s.CurrentBookings,
-                HasAvailability = s.HasAvailability()
-            }).ToList()
-        };
+        return _mapper.MapToAvailabilityListDto(request.ProviderId, slots);
     }
 }

@@ -1,6 +1,7 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Notification.Features.Notifications.Domain;
+using EHRPlatform.Services.Notification.Features.Notifications.Dtos.Responses;
 using Mapster;
 
 namespace EHRPlatform.Services.Notification.Features.Notifications.Queries;

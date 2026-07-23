@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Billing.Features.Billing.Domain;
+using EHRPlatform.Services.Billing.Domain;
 
 namespace EHRPlatform.Services.Billing;
 

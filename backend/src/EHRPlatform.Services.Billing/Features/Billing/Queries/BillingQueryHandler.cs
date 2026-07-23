@@ -1,21 +1,28 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Billing.Features.Billing.Domain;
-using Mapster;
+using EHRPlatform.Services.Billing.Features.Billing.Dtos.Responses;
+using EHRPlatform.Services.Billing.Mappings;
 
 namespace EHRPlatform.Services.Billing.Features.Billing.Queries;
 
 /// <summary>
 /// Get invoice by ID handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetInvoiceQueryHandler : IQueryHandler<GetInvoiceQuery, InvoiceResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly InvoiceMapper _mapper;
     private readonly ILogger<GetInvoiceQueryHandler> _logger;
 
-    public GetInvoiceQueryHandler(IUnitOfWork unitOfWork, ILogger<GetInvoiceQueryHandler> logger)
+    public GetInvoiceQueryHandler(
+        IUnitOfWork unitOfWork,
+        InvoiceMapper mapper,
+        ILogger<GetInvoiceQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger;
     }
 
@@ -33,52 +40,28 @@ public class GetInvoiceQueryHandler : IQueryHandler<GetInvoiceQuery, InvoiceResp
         if (invoice == null)
             throw new InvalidOperationException($"Invoice {request.InvoiceId} not found");
 
-        return MapToDto(invoice);
-    }
-
-    private InvoiceResponseDto MapToDto(Invoice invoice)
-    {
-        var dto = invoice.Adapt<InvoiceResponseDto>();
-        dto.BalanceDue = invoice.BalanceDue;
-        dto.LineItems = invoice.LineItems.Select(l => new LineItemDto
-        {
-            Id = l.Id,
-            Description = l.Description,
-            CPTCode = l.CPTCode,
-            Quantity = l.Quantity,
-            UnitPrice = l.UnitPrice,
-            Amount = l.Amount
-        }).ToList();
-        dto.Payments = invoice.Payments.Select(p => new PaymentDto
-        {
-            Id = p.Id,
-            Amount = p.Amount,
-            Method = p.Method,
-            ReceivedAt = p.ReceivedAt
-        }).ToList();
-        dto.Claims = invoice.InsuranceClaims.Select(c => new ClaimDto
-        {
-            Id = c.Id,
-            InsuranceProvider = c.InsuranceProvider,
-            ClaimNumber = c.ClaimNumber,
-            Status = c.Status,
-            Amount = c.Amount
-        }).ToList();
-        return dto;
+        // Delegate mapping to mapper - clean separation of concerns
+        return _mapper.MapToResponseDto(invoice);
     }
 }
 
 /// <summary>
 /// Get patient invoices handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetPatientInvoicesQueryHandler : IQueryHandler<GetPatientInvoicesQuery, InvoiceListDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly InvoiceMapper _mapper;
     private readonly ILogger<GetPatientInvoicesQueryHandler> _logger;
 
-    public GetPatientInvoicesQueryHandler(IUnitOfWork unitOfWork, ILogger<GetPatientInvoicesQueryHandler> logger)
+    public GetPatientInvoicesQueryHandler(
+        IUnitOfWork unitOfWork,
+        InvoiceMapper mapper,
+        ILogger<GetPatientInvoicesQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger;
     }
 
@@ -102,34 +85,28 @@ public class GetPatientInvoicesQueryHandler : IQueryHandler<GetPatientInvoicesQu
                 .Take(request.PageSize),
             cancellationToken);
 
-        return new InvoiceListDto
-        {
-            Items = invoices.Select(i => MapToDto(i)).ToList(),
-            Total = total,
-            PageNumber = request.PageNumber,
-            PageSize = request.PageSize
-        };
-    }
-
-    private InvoiceResponseDto MapToDto(Invoice invoice)
-    {
-        var dto = invoice.Adapt<InvoiceResponseDto>();
-        dto.BalanceDue = invoice.BalanceDue;
-        return dto;
+        // Delegate mapping to mapper
+        return _mapper.MapToListDto(invoices, total, request.PageNumber, request.PageSize);
     }
 }
 
 /// <summary>
 /// Get outstanding balance handler.
+/// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetPatientOutstandingBalanceQueryHandler : IQueryHandler<GetPatientOutstandingBalanceQuery, OutstandingBalanceDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly InvoiceMapper _mapper;
     private readonly ILogger<GetPatientOutstandingBalanceQueryHandler> _logger;
 
-    public GetPatientOutstandingBalanceQueryHandler(IUnitOfWork unitOfWork, ILogger<GetPatientOutstandingBalanceQueryHandler> logger)
+    public GetPatientOutstandingBalanceQueryHandler(
+        IUnitOfWork unitOfWork,
+        InvoiceMapper mapper,
+        ILogger<GetPatientOutstandingBalanceQueryHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger;
     }
 
@@ -144,24 +121,7 @@ public class GetPatientOutstandingBalanceQueryHandler : IQueryHandler<GetPatient
             q => q.Where(i => i.PatientId == request.PatientId && i.Status != "Cancelled"),
             cancellationToken);
 
-        var totalBalance = invoices.Sum(i => i.BalanceDue);
-        var overdueInvoices = invoices.Count(i => i.DueDate < DateTime.UtcNow && i.Status != "Paid");
-        var overdueAmount = invoices.Where(i => i.DueDate < DateTime.UtcNow && i.Status != "Paid").Sum(i => i.BalanceDue);
-
-        return new OutstandingBalanceDto
-        {
-            PatientId = request.PatientId,
-            TotalBalance = totalBalance,
-            OverdueInvoices = overdueInvoices,
-            OverdueAmount = overdueAmount,
-            Invoices = invoices.Select(i => MapToDto(i)).ToList()
-        };
-    }
-
-    private InvoiceResponseDto MapToDto(Invoice invoice)
-    {
-        var dto = invoice.Adapt<InvoiceResponseDto>();
-        dto.BalanceDue = invoice.BalanceDue;
-        return dto;
+        // Delegate mapping and balance calculation to mapper
+        return _mapper.MapToOutstandingBalanceDto(request.PatientId, invoices);
     }
 }

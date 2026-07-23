@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Clinical.Features.ClinicalNotes.Commands;
@@ -116,54 +117,4 @@ public record UpdateSOAPCommand : ICommand
 public record FinalizeClinicalNoteCommand : ICommand
 {
     public Guid ClinicalNoteId { get; init; }
-}
-
-/// <summary>
-/// Clinical note response DTO.
-/// </summary>
-public class ClinicalNoteResponseDto
-{
-    public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public DateTime EncounterDate { get; set; }
-    public string EncounterType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
-    public List<VitalSignsDto> VitalSigns { get; set; } = new();
-    public List<DiagnosisDto> Diagnoses { get; set; } = new();
-    public List<ProcedureDto> Procedures { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-}
-
-public class VitalSignsDto
-{
-    public Guid Id { get; set; }
-    public DateTime RecordedAt { get; set; }
-    public decimal Temperature { get; set; }
-    public int SystolicBP { get; set; }
-    public int DiastolicBP { get; set; }
-    public int HeartRate { get; set; }
-    public int RespiratoryRate { get; set; }
-    public decimal? Weight { get; set; }
-}
-
-public class DiagnosisDto
-{
-    public Guid Id { get; set; }
-    public string DiagnosisCode { get; set; } = string.Empty;
-    public string DiagnosisText { get; set; } = string.Empty;
-    public string DiagnosisType { get; set; } = string.Empty;
-}
-
-public class ProcedureDto
-{
-    public Guid Id { get; set; }
-    public string ProcedureName { get; set; } = string.Empty;
-    public string ProcedureCode { get; set; } = string.Empty;
-    public DateTime PerformedAt { get; set; }
-    public string Result { get; set; } = string.Empty;
 }

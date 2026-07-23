@@ -2,6 +2,7 @@ using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Search;
 using EHRPlatform.Services.Patient.Features.Patients.Domain;
+using EHRPlatform.Services.Patient.Features.Patients.Dtos.Responses;
 using Mapster;
 
 namespace EHRPlatform.Services.Patient.Features.Patients.Queries;

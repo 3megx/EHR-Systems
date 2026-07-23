@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Patient.Features.Patients.Dtos.Responses;
 
 namespace EHRPlatform.Services.Patient.Features.Patients.Queries;
 
@@ -50,59 +51,4 @@ public record GetPatientDetailQuery : ICachedQuery<PatientDetailDto>
 
     public string CacheKey => $"patient_detail_{PatientId}";
     public int CacheDurationSeconds => 900;
-}
-
-/// <summary>
-/// Patient detail response with relationships.
-/// </summary>
-public class PatientDetailDto
-{
-    public Guid Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
-    public int Age { get; set; }
-    public string Gender { get; set; } = string.Empty;
-    public string MRN { get; set; } = string.Empty;
-    public string BloodType { get; set; } = string.Empty;
-    public string? EmergencyContact { get; set; }
-    public string? EmergencyPhone { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public List<AllergyDetailDto> Allergies { get; set; } = new();
-    public List<ConditionDetailDto> Conditions { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastModifiedAt { get; set; }
-}
-
-public class AllergyDetailDto
-{
-    public Guid Id { get; set; }
-    public string Allergen { get; set; } = string.Empty;
-    public string Severity { get; set; } = string.Empty;
-    public string Notes { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-}
-
-public class ConditionDetailDto
-{
-    public Guid Id { get; set; }
-    public string Condition { get; set; } = string.Empty;
-    public string ICD10Code { get; set; } = string.Empty;
-    public DateTime? OnsetDate { get; set; }
-    public DateTime? ResolvedDate { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-/// <summary>
-/// Search result wrapper with pagination.
-/// </summary>
-public class SearchResultDto<T>
-{
-    public List<T> Items { get; set; } = new();
-    public int Total { get; set; }
-    public int PageNumber { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages => (Total + PageSize - 1) / PageSize;
 }

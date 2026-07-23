@@ -2,27 +2,32 @@ using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Appointment.Features.Appointments.Domain;
-using Mapster;
+using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
+using EHRPlatform.Services.Appointment.Mappings;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Commands;
 
 /// <summary>
 /// Schedule appointment handler.
 /// Validates provider availability, publishes event.
+/// Delegates all mapping to AppointmentMapper (SRP).
 /// </summary>
 public class ScheduleAppointmentCommandHandler : ICommandHandler<ScheduleAppointmentCommand, AppointmentResponseDto>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOutboxRepository _outbox;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<ScheduleAppointmentCommandHandler> _logger;
 
     public ScheduleAppointmentCommandHandler(
         IUnitOfWork unitOfWork,
         IOutboxRepository outbox,
+        AppointmentMapper mapper,
         ILogger<ScheduleAppointmentCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _outbox = outbox;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -92,7 +97,7 @@ public class ScheduleAppointmentCommandHandler : ICommandHandler<ScheduleAppoint
 
         _logger.LogInformation("Appointment scheduled {AppointmentId}", appointment.Id);
 
-        return appointment.Adapt<AppointmentResponseDto>();
+        return _mapper.MapToResponseDto(appointment);
     }
 }
 
@@ -318,17 +323,21 @@ public class CompleteAppointmentCommandHandler : ICommandHandler<CompleteAppoint
 
 /// <summary>
 /// Set provider availability handler.
+/// Delegates ProviderAvailability mapping to AppointmentMapper (SRP).
 /// </summary>
 public class SetProviderAvailabilityCommandHandler : ICommandHandler<SetProviderAvailabilityCommand, ProviderAvailabilityDto>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AppointmentMapper _mapper;
     private readonly ILogger<SetProviderAvailabilityCommandHandler> _logger;
 
     public SetProviderAvailabilityCommandHandler(
         IUnitOfWork unitOfWork,
+        AppointmentMapper mapper,
         ILogger<SetProviderAvailabilityCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
         _logger = logger;
     }
 

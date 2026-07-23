@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Patient.Features.Patients.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Patient.Features.Patients.Commands;
@@ -87,42 +88,4 @@ public class AddConditionCommandValidator : AbstractValidator<AddConditionComman
         RuleFor(x => x.Condition).NotEmpty();
         RuleFor(x => x.ICD10Code).Matches(@"^[A-Z][0-9]{2}(\.[0-9]{1,2})?$");
     }
-}
-
-/// <summary>
-/// Patient response DTO.
-/// </summary>
-public class PatientResponseDto
-{
-    public Guid Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
-    public string Gender { get; set; } = string.Empty;
-    public string MRN { get; set; } = string.Empty;
-    public string BloodType { get; set; } = string.Empty;
-    public string? EmergencyContact { get; set; }
-    public string? EmergencyPhone { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public List<AllergyDto> Allergies { get; set; } = new();
-    public List<ConditionDto> Conditions { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-}
-
-public class AllergyDto
-{
-    public Guid Id { get; set; }
-    public string Allergen { get; set; } = string.Empty;
-    public string Severity { get; set; } = string.Empty;
-    public string Notes { get; set; } = string.Empty;
-}
-
-public class ConditionDto
-{
-    public Guid Id { get; set; }
-    public string Condition { get; set; } = string.Empty;
-    public string ICD10Code { get; set; } = string.Empty;
-    public DateTime? OnsetDate { get; set; }
 }

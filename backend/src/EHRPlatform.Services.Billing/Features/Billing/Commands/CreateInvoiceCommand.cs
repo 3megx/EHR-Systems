@@ -1,4 +1,5 @@
 using EHRPlatform.Common.CQRS;
+using EHRPlatform.Services.Billing.Features.Billing.Dtos.Responses;
 using FluentValidation;
 
 namespace EHRPlatform.Services.Billing.Features.Billing.Commands;
@@ -80,52 +81,7 @@ public record CancelInvoiceCommand : ICommand
 /// <summary>
 /// Invoice response DTO.
 /// </summary>
-public class InvoiceResponseDto
+public record InvoiceCommandDto
 {
     public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public string InvoiceNumber { get; set; } = string.Empty;
-    public DateTime ServiceDate { get; set; }
-    public DateTime DueDate { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public decimal SubTotal { get; set; }
-    public decimal TaxAmount { get; set; }
-    public decimal TotalAmount { get; set; }
-    public decimal AmountPaid { get; set; }
-    public decimal BalanceDue { get; set; }
-    public string? InsuranceProvider { get; set; }
-    public string? InsurancePolicyNumber { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public List<LineItemDto> LineItems { get; set; } = new();
-    public List<PaymentDto> Payments { get; set; } = new();
-    public List<ClaimDto> Claims { get; set; } = new();
-}
-
-public class LineItemDto
-{
-    public Guid Id { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public string CPTCode { get; set; } = string.Empty;
-    public decimal Quantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal Amount { get; set; }
-}
-
-public class PaymentDto
-{
-    public Guid Id { get; set; }
-    public decimal Amount { get; set; }
-    public string Method { get; set; } = string.Empty;
-    public string Reference { get; set; } = string.Empty;
-    public DateTime ReceivedAt { get; set; }
-}
-
-public class ClaimDto
-{
-    public Guid Id { get; set; }
-    public string InsuranceProvider { get; set; } = string.Empty;
-    public string ClaimNumber { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public decimal Amount { get; set; }
-    public decimal? ApprovedAmount { get; set; }
 }

@@ -1,7 +1,12 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using EHRPlatform.Services.Billing.Features.Billing.Commands;
-using EHRPlatform.Services.Billing.Features.Billing.Queries;
+using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
+using EHRPlatform.Services.Billing.Features.Invoicing.Queries;
+using EHRPlatform.Services.Billing.Features.Invoicing.Dtos.Responses;
+using EHRPlatform.Services.Billing.Features.Payments.Commands;
+using EHRPlatform.Services.Billing.Features.Claims.Commands;
+using EHRPlatform.Services.Billing.Features.Reports.Queries;
+using EHRPlatform.Services.Billing.Features.Reports.Dtos.Responses;
 
 namespace EHRPlatform.Services.Billing.Controllers;
 
@@ -46,7 +51,7 @@ public class BillingController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetInvoiceQuery { InvoiceId = id },
+            new Features.Invoicing.Queries.GetInvoiceQuery { InvoiceId = id },
             cancellationToken);
         return Ok(result);
     }
@@ -63,7 +68,7 @@ public class BillingController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var result = await _mediator.Send(
-            new GetPatientInvoicesQuery
+            new Features.Reports.Queries.GetPatientInvoicesQuery
             {
                 PatientId = patientId,
                 PageNumber = page,
@@ -84,7 +89,7 @@ public class BillingController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetPatientOutstandingBalanceQuery { PatientId = patientId },
+            new Features.Reports.Queries.GetPatientOutstandingBalanceQuery { PatientId = patientId },
             cancellationToken);
         return Ok(result);
     }
@@ -137,7 +142,7 @@ public class BillingController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         await _mediator.Send(
-            new CancelInvoiceCommand { InvoiceId = id, Reason = reason },
+            new Features.Claims.Commands.CancelInvoiceCommand { InvoiceId = id, Reason = reason },
             cancellationToken);
         return NoContent();
     }
