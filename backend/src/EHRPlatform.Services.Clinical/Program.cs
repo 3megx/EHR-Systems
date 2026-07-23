@@ -1,5 +1,5 @@
 using EHRPlatform.Common.Extensions;
-using EHRPlatform.Services.Clinical;
+using EHRPlatform.Services.Clinical.Data;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 

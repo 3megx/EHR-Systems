@@ -1,5 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Dtos.Responses;
+using EHRPlatform.Services.Clinical.Application.ClinicalNoteManagement.Responses;
 
 namespace EHRPlatform.Services.Clinical.Features.ClinicalNotes.Queries;
 

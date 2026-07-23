@@ -2,18 +2,17 @@ using Mapster;
 using EHRPlatform.Common.Mapping;
 using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Domain;
 using EHRPlatform.Services.Clinical.Application.ClinicalNoteManagement.Responses;
-using Microsoft.Extensions.Logging;
 
-namespace EHRPlatform.Services.Clinical.Mappings;
+namespace EHRPlatform.Services.Clinical.Application.ClinicalNoteManagement.Mappers;
 
 /// <summary>
-/// Clinical Mapper
+/// Clinical Note Mapper
 /// Single Responsibility: Convert between Clinical domain models and DTOs.
 /// Handles all Clinical-related mappings with optional post-processing.
 /// </summary>
-public class ClinicalMapper : MappingServiceBase<ClinicalNote, ClinicalNoteResponseDto>
+public class ClinicalNoteMapper : MappingServiceBase<ClinicalNote, ClinicalNoteResponseDto>
 {
-    public ClinicalMapper(ILogger<ClinicalMapper> logger) : base(logger)
+    public ClinicalNoteMapper(ILogger<ClinicalNoteMapper> logger) : base(logger)
     {
     }
 
@@ -44,9 +43,9 @@ public class ClinicalMapper : MappingServiceBase<ClinicalNote, ClinicalNoteRespo
             Objective = clinicalNote.Objective,
             Assessment = clinicalNote.Assessment,
             Plan = clinicalNote.Plan,
-            VitalSigns = clinicalNote.VitalSigns.Adapt<List<VitalSignsDetailDto>>(),
-            Diagnoses = clinicalNote.Diagnoses.Adapt<List<DiagnosisDetailDto>>(),
-            Procedures = clinicalNote.Procedures.Adapt<List<ProcedureDetailDto>>(),
+            VitalSigns = clinicalNote.VitalSigns.Adapt<VitalSignsDto>(),
+            Diagnoses = clinicalNote.Diagnoses.Adapt<List<DiagnosisDto>>(),
+            Procedures = clinicalNote.Procedures.Adapt<List<ProcedureDto>>(),
             CreatedAt = clinicalNote.CreatedAt,
             LastModifiedAt = clinicalNote.LastModifiedAt
         };
@@ -65,7 +64,8 @@ public class ClinicalMapper : MappingServiceBase<ClinicalNote, ClinicalNoteRespo
 
         return new ClinicalNoteListDto
         {
-            Items = clinicalNotes.Adapt<List<ClinicalNoteResponseDto>>(),
+            PatientId = clinicalNotes.FirstOrDefault()?.PatientId ?? Guid.Empty,
+            Notes = clinicalNotes.Adapt<List<ClinicalNoteTimelineItemDto>>(),
             Total = total,
             PageNumber = pageNumber,
             PageSize = pageSize
@@ -80,26 +80,4 @@ public class ClinicalMapper : MappingServiceBase<ClinicalNote, ClinicalNoteRespo
         Logger.LogDebug("Mapping {Count} clinical notes to response DTO list", clinicalNotes.Count);
         return clinicalNotes.Adapt<List<ClinicalNoteResponseDto>>();
     }
-}
-
-/// <summary>
-/// Clinical note detailed DTO with relationships.
-/// </summary>
-public class ClinicalNoteDetailedDto
-{
-    public Guid Id { get; set; }
-    public Guid PatientId { get; set; }
-    public Guid ProviderId { get; set; }
-    public DateTime EncounterDate { get; set; }
-    public string EncounterType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Subjective { get; set; } = string.Empty;
-    public string Objective { get; set; } = string.Empty;
-    public string Assessment { get; set; } = string.Empty;
-    public string Plan { get; set; } = string.Empty;
-    public List<VitalSignsDetailDto> VitalSigns { get; set; } = new();
-    public List<DiagnosisDetailDto> Diagnoses { get; set; } = new();
-    public List<ProcedureDetailDto> Procedures { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastModifiedAt { get; set; }
 }
