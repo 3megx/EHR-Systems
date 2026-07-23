@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using EHRPlatform.Services.Billing.Domain.Entities;
-using EHRPlatform.Services.Billing.Domain.Enums;
 
 namespace EHRPlatform.Services.Billing.Data.Seeds;
 

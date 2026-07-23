@@ -1,9 +1,6 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Billing.Domain;
-using EHRPlatform.Services.Billing.Application.Reports.Responses;
 using EHRPlatform.Services.Billing.Features.Reports.Queries;
-using EHRPlatform.Services.Billing.Application.Invoicing;
 using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Billing.Features.Reports.Handlers;

@@ -1,7 +1,4 @@
 using Mapster;
-using EHRPlatform.Services.Billing.Domain;
-using EHRPlatform.Services.Billing.Application.Invoicing.Responses;
-using EHRPlatform.Services.Billing.Application.Reports.Responses;
 
 namespace EHRPlatform.Services.Billing.Application.Invoicing;
 

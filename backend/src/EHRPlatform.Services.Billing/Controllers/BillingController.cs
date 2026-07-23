@@ -2,11 +2,9 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 using EHRPlatform.Services.Billing.Features.Invoicing.Queries;
-using EHRPlatform.Services.Billing.Application.Invoicing.Responses;
 using EHRPlatform.Services.Billing.Features.Payments.Commands;
 using EHRPlatform.Services.Billing.Features.Claims.Commands;
 using EHRPlatform.Services.Billing.Features.Reports.Queries;
-using EHRPlatform.Services.Billing.Application.Reports.Responses;
 
 namespace EHRPlatform.Services.Billing.Controllers;
 

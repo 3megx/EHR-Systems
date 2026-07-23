@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using EHRPlatform.Services.Billing.Domain.Entities;
 
 namespace EHRPlatform.Services.Billing.Data.Configuration;
 

@@ -1,8 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
-using EHRPlatform.Services.Billing.Domain.Entities;
-using EHRPlatform.Services.Billing.Data.Configuration;
-using EHRPlatform.Services.Billing.Data.Seeds;
 
 namespace EHRPlatform.Services.Billing.Data;
 
