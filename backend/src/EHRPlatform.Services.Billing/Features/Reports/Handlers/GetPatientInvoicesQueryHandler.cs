@@ -3,8 +3,7 @@ using EHRPlatform.Common.Data;
 using EHRPlatform.Services.Billing.Features.Reports.Queries;
 using Microsoft.Extensions.Logging;
 
-/// <summary>
-/// Get patient invoices handler.
+namespace EHRPlatform.Services.Billing.Features.Reports.Handlers;
 /// Pure business logic - no mapping responsibility.
 /// </summary>
 public class GetPatientInvoicesQueryHandler : IQueryHandler<GetPatientInvoicesQuery, InvoiceListDto>

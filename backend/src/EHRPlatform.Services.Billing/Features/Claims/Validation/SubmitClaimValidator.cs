@@ -12,12 +12,3 @@ public class SubmitClaimValidator : AbstractValidator<SubmitToInsuranceCommand>
         RuleFor(x => x.PolicyNumber).NotEmpty();
     }
 }
-
-public class CancelInvoiceValidator : AbstractValidator<CancelInvoiceCommand>
-{
-    public CancelInvoiceValidator()
-    {
-        RuleFor(x => x.InvoiceId).NotEmpty();
-        RuleFor(x => x.Reason).NotEmpty();
-    }
-}

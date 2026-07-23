@@ -13,11 +13,3 @@ public record SubmitToInsuranceCommand : ICommand
     public string PolicyNumber { get; init; } = string.Empty;
 }
 
-/// <summary>
-/// Cancel invoice command.
-/// </summary>
-public record CancelInvoiceCommand : ICommand
-{
-    public Guid InvoiceId { get; init; }
-    public string Reason { get; init; } = string.Empty;
-}

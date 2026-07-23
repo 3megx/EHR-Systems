@@ -1,35 +1,35 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
-using EHRPlatform.Services.Billing.Features.Claims.Commands;
+using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 using Microsoft.Extensions.Logging;
 
-namespace EHRPlatform.Services.Billing.Features.Claims.Handlers;
+namespace EHRPlatform.Services.Billing.Features.Invoicing.Handlers;
 
 /// <summary>
-/// Submit to insurance handler.
-/// Pure business logic - no mapping responsibility.
+/// Cancel invoice handler.
+/// Pure business logic - cancels existing invoice and publishes event.
 /// </summary>
-public class SubmitToInsuranceCommandHandler : ICommandHandler<SubmitToInsuranceCommand>
+public class CancelInvoiceCommandHandler : ICommandHandler<CancelInvoiceCommand>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOutboxRepository _outbox;
-    private readonly ILogger<SubmitToInsuranceCommandHandler> _logger;
+    private readonly ILogger<CancelInvoiceCommandHandler> _logger;
 
-    public SubmitToInsuranceCommandHandler(
+    public CancelInvoiceCommandHandler(
         IUnitOfWork unitOfWork,
         IOutboxRepository outbox,
-        ILogger<SubmitToInsuranceCommandHandler> logger)
+        ILogger<CancelInvoiceCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _outbox = outbox;
         _logger = logger;
     }
 
-    public async Task Handle(SubmitToInsuranceCommand command, CancellationToken cancellationToken)
+    public async Task Handle(CancelInvoiceCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Submitting invoice {InvoiceId} to insurance {Provider}",
-            command.InvoiceId, command.InsuranceProvider);
+        _logger.LogInformation("Cancelling invoice {InvoiceId} - Reason: {Reason}",
+            command.InvoiceId, command.Reason);
 
         var repo = _unitOfWork.Repository<Invoice>();
         var invoice = await repo.FirstOrDefaultAsync(
@@ -39,22 +39,22 @@ public class SubmitToInsuranceCommandHandler : ICommandHandler<SubmitToInsurance
         if (invoice == null)
             throw new InvalidOperationException($"Invoice {command.InvoiceId} not found");
 
-        invoice.SubmitToInsurance(command.InsuranceProvider, command.PolicyNumber);
+        invoice.Cancel(command.Reason);
         await repo.UpdateAsync(invoice, cancellationToken);
 
         // Publish event
-        var submitEvent = invoice.GetDomainEvents().Last();
+        var cancelEvent = invoice.GetDomainEvents().Last();
         await _outbox.AddAsync(new OutboxEvent
         {
             Id = Guid.NewGuid(),
             AggregateId = invoice.Id,
-            EventType = nameof(InvoiceSubmittedEvent),
-            EventData = System.Text.Json.JsonSerializer.Serialize(submitEvent),
+            EventType = nameof(InvoiceCancelledEvent),
+            EventData = System.Text.Json.JsonSerializer.Serialize(cancelEvent),
             CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Invoice submitted to insurance {Provider}", command.InsuranceProvider);
+        _logger.LogInformation("Invoice {InvoiceId} cancelled successfully", command.InvoiceId);
     }
 }
