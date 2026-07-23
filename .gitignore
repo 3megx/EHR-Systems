@@ -1,0 +1,64 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Build
+bin/
+obj/
+dist/
+out/
+build/
+*.dll
+*.exe
+*.pdb
+
+# Node/npm
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-error.log*
+
+# .NET
+.vs/
+*.user
+*.suo
+.nuget/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development.local
+
+# Docker
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Temporary
+temp/
+tmp/
+*.tmp
+
+# Angular
+.angular/
+dist/
+
+# Database
+*.db
+*.sqlite
+migrations/
+
+# Secrets (never commit these!)
+appsettings.*.json
+secrets.json
+launchSettings.json

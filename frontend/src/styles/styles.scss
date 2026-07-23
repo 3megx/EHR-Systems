@@ -1,0 +1,235 @@
+// ============================================
+// GLOBAL STYLES
+// ============================================
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+// ============================================
+// VARIABLES
+// ============================================
+
+:root {
+  // Colors
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+  --color-info: #0284c7;
+
+  // Spacing
+  --spacing-unit: 0.25rem;
+
+  // Typography
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'Courier New', monospace;
+
+  // Shadows
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+
+// ============================================
+// SCROLLBAR STYLES
+// ============================================
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-lg;
+
+  &:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+// ============================================
+// GLOBAL ANIMATIONS
+// ============================================
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// ============================================
+// UTILITY CLASSES
+// ============================================
+
+.fade-in {
+  animation: fadeIn 300ms ease-in-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 300ms ease-out;
+}
+
+.slide-in-down {
+  animation: slideInDown 300ms ease-out;
+}
+
+// ============================================
+// DARK MODE SUPPORT
+// ============================================
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+// ============================================
+// PRINT STYLES
+// ============================================
+
+@media print {
+  body {
+    @apply bg-white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+// ============================================
+// ACCESSIBILITY
+// ============================================
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// Focus visible for keyboard navigation
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-blue-500;
+}
+
+// ============================================
+// FORM ELEMENTS
+// ============================================
+
+input,
+textarea,
+select {
+  @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600;
+  @apply rounded-md shadow-sm focus:outline-none focus:ring-blue-500;
+  @apply focus:border-blue-500 dark:bg-gray-700 dark:text-white;
+  @apply transition duration-200 ease-in-out;
+}
+
+// ============================================
+// BUTTONS
+// ============================================
+
+button {
+  @apply transition duration-200 ease-in-out;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+// ============================================
+// TABLES
+// ============================================
+
+table {
+  @apply w-full border-collapse;
+}
+
+th {
+  @apply bg-gray-100 dark:bg-gray-700 px-4 py-2 text-left font-semibold;
+  @apply text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600;
+}
+
+td {
+  @apply px-4 py-2 border-b border-gray-200 dark:border-gray-700;
+  @apply text-gray-700 dark:text-gray-300;
+}
+
+// ============================================
+// CARDS
+// ============================================
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md;
+  @apply border border-gray-200 dark:border-gray-700 p-4;
+}
+
+// ============================================
+// ALERTS
+// ============================================
+
+.alert {
+  @apply rounded-md p-4 mb-4;
+
+  &.alert-success {
+    @apply bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200;
+    @apply border border-green-200 dark:border-green-700;
+  }
+
+  &.alert-error {
+    @apply bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200;
+    @apply border border-red-200 dark:border-red-700;
+  }
+
+  &.alert-warning {
+    @apply bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200;
+    @apply border border-yellow-200 dark:border-yellow-700;
+  }
+
+  &.alert-info {
+    @apply bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200;
+    @apply border border-blue-200 dark:border-blue-700;
+  }
+}
