@@ -1,0 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace EHRPlatform.Services.Appointment.Data.Configuration;
+
+public class AppointmentConfiguration : IEntityTypeConfiguration<Entities.Appointment>
+{
+    public void Configure(EntityTypeBuilder<Entities.Appointment> entity)
+    {
+        entity.HasKey(e => e.Id);
+        entity.HasIndex(e => e.PatientId);
+        entity.HasIndex(e => e.ProviderId);
+        entity.HasIndex(e => e.ScheduledStart).IsDescending();
+        entity.HasIndex(e => new { e.ProviderId, e.ScheduledStart });
+        entity.Property(e => e.Status).HasMaxLength(50).HasDefaultValue("Scheduled");
+        entity.Property(e => e.AppointmentType).HasMaxLength(50);
+    }
+}

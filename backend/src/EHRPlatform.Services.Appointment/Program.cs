@@ -1,5 +1,4 @@
 using EHRPlatform.Common.Extensions;
-using EHRPlatform.Services.Appointment;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
