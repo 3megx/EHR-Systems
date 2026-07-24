@@ -1,43 +1,65 @@
 using EHRPlatform.Common.Extensions;
-using EHRPlatform.Services.Notification;
-using Microsoft.EntityFrameworkCore;
+using EHRPlatform.Services.Notification.Consumers;
+using EHRPlatform.Services.Notification.Hubs;
+using MassTransit;
 using Serilog;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, config) =>
-    config.ReadFrom.Configuration(context.Configuration));
+// ── Logging ───────────────────────────────────────────────────────────────────
+builder.Host.UseSerilog((ctx, config) =>
+    config.ReadFrom.Configuration(ctx.Configuration));
+
+// ── SignalR ───────────────────────────────────────────────────────────────────
+builder.Services.AddSignalR(opts =>
+{
+    opts.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    opts.MaximumReceiveMessageSize = 32 * 1024; // 32KB
+});
+
+// ── MassTransit: RabbitMQ (background jobs) + Kafka rider (domain events) ────
+builder.Services.AddMassTransitHybrid(
+    builder.Configuration,
+    configureRabbitMqConsumers: x =>
+    {
+        x.AddConsumer<SendWelcomeNotificationConsumer>();
+    },
+    configureKafkaRider: rider =>
+    {
+        // Bridge: Kafka domain events → SignalR push
+        rider.AddConsumer<LabResultConsumer>();
+
+        rider.AddConsumer<LabResultConsumer>();
+        // Add more Kafka consumers here as clinical events are added:
+        //   rider.AddConsumer<VitalAlertConsumer>();
+        //   rider.AddConsumer<AppointmentReminderConsumer>();
+    });
+
+// ── OpenTelemetry ─────────────────────────────────────────────────────────────
+builder.Services.AddEHRTelemetry(builder.Configuration, "notification-service");
+
+// ── Health Checks ─────────────────────────────────────────────────────────────
+builder.Services.AddHealthChecks();
+
+// ── CORS (must allow SignalR WebSocket connections) ───────────────────────────
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200", "http://localhost:5000"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SignalRCors", policy =>
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()); // Required for SignalR WebSocket
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string not found");
-
-builder.Services.AddDbContext<NotificationContext>(options =>
-    options.UseNpgsql(connectionString, b => b.MigrationsAssembly("EHRPlatform.Services.Notification")));
-
-builder.Services.AddCommonServices(builder.Configuration);
-
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT secret not configured");
-builder.Services.AddJwtAuthentication(jwtSecret);
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-    });
-});
-
+// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<NotificationContext>();
-    await db.Database.MigrateAsync();
-}
 
 if (app.Environment.IsDevelopment())
 {
@@ -45,10 +67,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("SignalRCors");
+app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+app.MapHub<EHRNotificationHub>("/hubs/notifications");
+app.MapHealthChecks("/health");
 
 await app.RunAsync();

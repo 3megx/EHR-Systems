@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL - Identity Service Database
+  # ── PostgreSQL databases (one per service) ────────────────────────────────────
   postgres-identity:
     image: postgres:16-alpine
     container_name: ehr-postgres-identity
@@ -21,7 +21,6 @@ services:
     networks:
       - ehr-network
 
-  # PostgreSQL - Patient Service Database
   postgres-patient:
     image: postgres:16-alpine
     container_name: ehr-postgres-patient
@@ -41,7 +40,6 @@ services:
     networks:
       - ehr-network
 
-  # PostgreSQL - Clinical Service Database
   postgres-clinical:
     image: postgres:16-alpine
     container_name: ehr-postgres-clinical
@@ -61,7 +59,26 @@ services:
     networks:
       - ehr-network
 
-  # Redis - Distributed Cache
+  postgres-notification:
+    image: postgres:16-alpine
+    container_name: ehr-postgres-notification
+    environment:
+      POSTGRES_DB: ehr_notification
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ehr-network
+
+  # ── Redis ─────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: ehr-redis
@@ -71,14 +88,14 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "-a", "redis_password", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - ehr-network
 
-  # Zookeeper - Kafka Dependency
+  # ── Kafka + Zookeeper (primary domain event bus) ───────────────────────────────
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: ehr-zookeeper
@@ -92,7 +109,6 @@ services:
     networks:
       - ehr-network
 
-  # Kafka - Event Streaming
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: ehr-kafka
@@ -108,6 +124,12 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_RETENTION_HOURS: 168
+      # Pre-create critical topics
+      KAFKA_CREATE_TOPICS: >
+        patient-created-event.development:1:1,
+        lab-result-ready-event.development:1:1,
+        appointment-scheduled-event.development:1:1,
+        audit-log-event.development:1:1
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -121,7 +143,43 @@ services:
     networks:
       - ehr-network
 
-  # Elasticsearch - Full-Text Search
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: ehr-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ehr-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8080:8080"
+    networks:
+      - ehr-network
+
+  # ── RabbitMQ (background job bus) ────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: ehr-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ehr_user
+      RABBITMQ_DEFAULT_PASS: ehr_password
+      RABBITMQ_DEFAULT_VHOST: /ehr
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI (http://localhost:15672)
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ehr-network
+
+  # ── Elasticsearch + Kibana ────────────────────────────────────────────────────
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
     container_name: ehr-elasticsearch
@@ -141,7 +199,6 @@ services:
     networks:
       - ehr-network
 
-  # Kibana - Elasticsearch UI & Logging
   kibana:
     image: docker.elastic.co/kibana/kibana:8.10.0
     container_name: ehr-kibana
@@ -152,27 +209,6 @@ services:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     ports:
       - "5601:5601"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'state.*green'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - ehr-network
-
-  # Kafka UI - Topic Management
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: ehr-kafka-ui
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      KAFKA_CLUSTERS_0_NAME: ehr-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    ports:
-      - "8080:8080"
     networks:
       - ehr-network
 
@@ -184,7 +220,9 @@ volumes:
   postgres-identity-data:
   postgres-patient-data:
   postgres-clinical-data:
+  postgres-notification-data:
   redis-data:
   zookeeper-data:
   kafka-data:
+  rabbitmq-data:
   elasticsearch-data:

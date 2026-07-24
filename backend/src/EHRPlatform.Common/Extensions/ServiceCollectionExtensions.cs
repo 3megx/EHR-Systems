@@ -139,9 +139,23 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Add Serilog structured logging.
+    /// One-call convenience wrapper used by legacy microservice Program.cs files.
+    /// Registers CQRS, caching, encryption, and logging from a single call.
+    /// Prefer calling the individual extension methods directly in new services.
     /// </summary>
-    private static IServiceCollection AddSerilogLogging(this IServiceCollection services)
+    public static IServiceCollection AddCommonServices(
+        this IServiceCollection services,
+        Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        services.AddCQRSFromCurrentAssembly();
+        services.AddEHRCommon(configuration);
+        return services;
+    }
+
+    /// <summary>
+    /// Add Serilog structured logging (public so API Gateway and other hosts can call it).
+    /// </summary>
+    public static IServiceCollection AddSerilogLogging(this IServiceCollection services)
     {
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
