@@ -2,56 +2,66 @@ using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Commands;
-using EHRPlatform.Services.Clinical.Features.ClinicalNotes.Domain;
+using EHRPlatform.Services.Clinical.Application.ClinicalNotes.Responses;
+using EHRPlatform.Services.Clinical.Application.ClinicalNotes.Mappers;
+using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Clinical.Features.ClinicalNotes.Handlers;
 
 /// <summary>
-/// Finalize clinical note handler.
+/// Finalize clinical note command handler.
+/// Moves note from draft to finalized status.
 /// </summary>
-public class FinalizeClinicalNoteCommandHandler : ICommandHandler<FinalizeClinicalNoteCommand>
+public class FinalizeClinicalNoteCommandHandler : ICommandHandler<FinalizeClinicalNoteCommand, ClinicalNoteResponse>
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IOutboxRepository _outbox;
+    private readonly ClinicalNoteMapper _mapper;
     private readonly ILogger<FinalizeClinicalNoteCommandHandler> _logger;
 
     public FinalizeClinicalNoteCommandHandler(
         IUnitOfWork unitOfWork,
         IOutboxRepository outbox,
+        ClinicalNoteMapper mapper,
         ILogger<FinalizeClinicalNoteCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
         _outbox = outbox;
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _logger = logger;
     }
 
-    public async Task Handle(FinalizeClinicalNoteCommand command, CancellationToken cancellationToken)
+    public async Task<ClinicalNoteResponse> Handle(FinalizeClinicalNoteCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Finalizing clinical note {NoteId}", command.ClinicalNoteId);
+        _logger.LogInformation("Finalizing clinical note {NoteId}", command.NoteId);
 
-        var repo = _unitOfWork.Repository<ClinicalNote>();
-        var note = await repo.FirstOrDefaultAsync(
-            q => q.Where(n => n.Id == command.ClinicalNoteId),
-            cancellationToken);
+        var repo = _unitOfWork.Repository<Domain.Entities.ClinicalNote>();
+        var note = await repo.GetByIdAsync(command.NoteId, cancellationToken);
 
         if (note == null)
-            throw new InvalidOperationException($"Clinical note {command.ClinicalNoteId} not found");
+            throw new KeyNotFoundException($"Clinical note {command.NoteId} not found");
 
         note.Finalize();
 
         await repo.UpdateAsync(note, cancellationToken);
 
-        // Publish completion event
-        var completeEvent = note.GetDomainEvents().Last();
+        // Publish event
+        var finalizedEvent = new ClinicalNoteCompletedEvent(
+            note.Id, note.PatientId, note.EncounterDate);
+
         await _outbox.AddAsync(new OutboxEvent
         {
             Id = Guid.NewGuid(),
             AggregateId = note.Id,
             EventType = nameof(ClinicalNoteCompletedEvent),
-            EventData = System.Text.Json.JsonSerializer.Serialize(completeEvent),
+            EventData = System.Text.Json.JsonSerializer.Serialize(finalizedEvent),
             CreatedAt = DateTime.UtcNow
         }, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Clinical note finalized {NoteId}", note.Id);
+
+        return _mapper.MapToResponse(note);
     }
 }
