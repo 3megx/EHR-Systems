@@ -1,107 +1,127 @@
-using EHRPlatform.Common.Data;
-using EHRPlatform.Common.Caching;
-using EHRPlatform.Common.Search;
-using EHRPlatform.Common.Messaging;
-using EHRPlatform.Services.Audit;
-using EHRPlatform.Services.Audit.Features.Audit.Commands;
-using EHRPlatform.Services.Audit.Features.Audit.Queries;
+using EHRPlatform.Common.Extensions;
+using EHRPlatform.Common.Health;
+using EHRPlatform.Services.Audit.Data;
 using Serilog;
-using Microsoft.EntityFrameworkCore;
-using MediatR;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
-
-// Logging
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
+    .MinimumLevel.Information()
     .WriteTo.Console()
-    .WriteTo.File("logs/audit-service-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
+    .Enrich.FromLogContext()
+    .CreateBootstrapLogger();
 
-builder.Host.UseSerilog();
-
-// Services
-builder.Services.AddScoped<AuditContext>();
-builder.Services.AddScoped(typeof(IUnitOfWork), typeof(UnitOfWork<AuditContext>));
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
-// CQRS
-builder.Services.AddMediatR(config => config.RegisterServicesFromAssemblyContaining<RecordAuditEntryCommand>());
-
-// Caching
-builder.Services.AddStackExchangeRedisCache(options =>
+try
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-});
-builder.Services.AddScoped<ICacheService, RedisCacheService>();
+    var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<AuditContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("AuditDb"),
-        x => x.MigrationsAssembly("EHRPlatform.Services.Audit")));
+    // ── Logging ───────────────────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, cfg) =>
+        cfg.MinimumLevel.Information()
+           .WriteTo.Console()
+           .Enrich.FromLogContext());
 
-// Elasticsearch
-var elasticOptions = builder.Configuration.GetSection("Elasticsearch").Get<ElasticsearchOptions>()
-    ?? throw new InvalidOperationException("Elasticsearch configuration not found");
-builder.Services.AddSingleton(elasticOptions);
-builder.Services.AddScoped<ISearchService, ElasticsearchService>();
+    // ── Controllers & Swagger ─────────────────────────────────────────────────
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 
-// Kafka
-var kafkaOptions = builder.Configuration.GetSection("Kafka").Get<KafkaOptions>()
-    ?? throw new InvalidOperationException("Kafka configuration not found");
-builder.Services.AddSingleton(kafkaOptions);
+    // ── Database (PostgreSQL) ─────────────────────────────────────────────────
+    var connectionString = BuildConnectionString(builder.Configuration);
+    builder.Services.AddPostgresDataAccess<AuditContext>(connectionString);
 
-// API
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { Title = "Audit Service API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new()
+    // ── CQRS ─────────────────────────────────────────────────────────────────
+    builder.Services.AddCQRSFromCurrentAssembly();
+
+    // ── Redis Caching (optional) ──────────────────────────────────────────────
+    var redisConnStr = builder.Configuration["ConnectionStrings:Redis"]
+        ?? builder.Configuration["Redis:ConnectionString"]
+        ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+    if (!string.IsNullOrEmpty(redisConnStr))
     {
-        Type = "http",
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "Enter JWT token"
-    });
-    c.AddSecurityRequirement(new() { { new() { Reference = new() { Type = 0, Id = "Bearer" } }, new string[] { } } });
-});
+        try { builder.Services.AddRedisCaching(redisConnStr); }
+        catch (Exception ex) { Log.Warning(ex, "Redis not available for Audit Service"); }
+    }
 
-// CORS
-builder.Services.AddCors(options =>
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
-
-// Auth
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer(options =>
+    // ── Elasticsearch (optional — used for audit log search) ─────────────────
+    var esNodes = builder.Configuration.GetSection("Elasticsearch:Nodes").Get<string[]>();
+    var esUrl = (esNodes?.FirstOrDefault())
+        ?? builder.Configuration["Elasticsearch:Url"]
+        ?? Environment.GetEnvironmentVariable("ELASTICSEARCH_URL");
+    if (!string.IsNullOrEmpty(esUrl))
     {
-        options.Authority = builder.Configuration["Auth:Authority"];
-        options.Audience = "audit-service";
-    });
+        try { builder.Services.AddElasticsearchSearch(esUrl); }
+        catch (Exception ex) { Log.Warning(ex, "Elasticsearch not available for Audit Service"); }
+    }
 
-builder.Services.AddAuthorization();
+    // ── JWT Authentication ────────────────────────────────────────────────────
+    var jwtSecret = builder.Configuration["Jwt:Secret"]
+        ?? Environment.GetEnvironmentVariable("JWT_SECRET")
+        ?? throw new InvalidOperationException("JWT_SECRET is required");
+    builder.Services.AddJwtAuthentication(jwtSecret);
 
-var app = builder.Build();
+    // ── CORS ──────────────────────────────────────────────────────────────────
+    builder.Services.AddCors(options =>
+        options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-// Migrations
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<AuditContext>();
-    await context.Database.MigrateAsync();
-}
+    // ── Health Checks ─────────────────────────────────────────────────────────
+    var healthBuilder = builder.Services.AddHealthChecks()
+        .AddDbContextCheck<AuditContext>("postgres-audit", tags: ["db", "postgres"]);
+    if (!string.IsNullOrEmpty(redisConnStr))
+        healthBuilder.AddCacheHealthCheck("redis-audit");
+    if (!string.IsNullOrEmpty(esUrl))
+        healthBuilder.AddElasticsearchHealthCheck("elasticsearch-audit");
 
-if (app.Environment.IsDevelopment())
-{
+    // ── Build ─────────────────────────────────────────────────────────────────
+    var app = builder.Build();
+
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // ── Schema ────────────────────────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AuditContext>();
+        await db.Database.EnsureCreatedAsync();
+        Log.Information("Audit database schema verified/created");
+    }
+
+    app.UseSerilogRequestLogging();
+    app.UseCors("AllowAll");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+    app.MapHealthChecks("/health");
+
+    Log.Information("EHR Audit Service starting");
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Audit Service terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
 }
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
+static string BuildConnectionString(IConfiguration config)
+{
+    var explicit_ = config.GetConnectionString("AuditDb")
+        ?? config.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(explicit_) && !explicit_.Contains("localhost")) return explicit_;
 
-await app.RunAsync();
+    var host = Environment.GetEnvironmentVariable("PGHOST");
+    var port = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+    var db   = Environment.GetEnvironmentVariable("PGDATABASE");
+    var user = Environment.GetEnvironmentVariable("PGUSER");
+    var pass = Environment.GetEnvironmentVariable("PGPASSWORD");
+
+    if (!string.IsNullOrEmpty(host))
+    {
+        var ssl = host.Contains('.') ? "SSL Mode=Require;Trust Server Certificate=true;" : "SSL Mode=Disable;";
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};{ssl}";
+    }
+
+    if (!string.IsNullOrEmpty(explicit_)) return explicit_;
+    throw new InvalidOperationException("Database connection not configured. Set PGHOST or ConnectionStrings__DefaultConnection.");
+}
