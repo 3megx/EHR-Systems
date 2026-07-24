@@ -1,97 +1,80 @@
-# EHR Platform — Replit Project
+# Modern EHR Platform
 
-## Project Overview
+A production-ready, enterprise-grade Electronic Health Records system built with ASP.NET Core microservices and Angular 18.
 
-**Modern EHR Platform** is a full-stack Electronic Health Records system with:
+## Stack
 
-- **Angular 18 Frontend** — complete, 150+ files, Tailwind CSS, NgRx state management
-- **ASP.NET Core 8 Microservices Backend** — CQRS, Event-Driven Architecture, HIPAA compliance
-- **Docker Compose** — full infrastructure stack (Kafka, RabbitMQ, PostgreSQL, Redis, Elasticsearch)
+- **Backend**: ASP.NET Core (.NET 8), EF Core, PostgreSQL, MediatR (CQRS), FluentValidation, Serilog, Mapster
+- **Frontend**: Angular 18, Tailwind CSS (separate `frontend/` directory — not yet wired to a workflow)
+- **Database**: Replit managed PostgreSQL (auto-provisioned)
 
-## Running on Replit
+## Project Structure
 
-### Frontend Only (Angular)
-The Angular frontend can run standalone without any backend services:
-
-```bash
-cd frontend
-npm install
-npm start   # serves on port 4200
+```
+backend/
+  src/
+    EHRPlatform.Common/          # Shared: CQRS, repository, UoW, domain events, security
+    EHRPlatform.Services.Identity/  # Auth microservice (running)
+    EHRPlatform.Services.Patient/   # Patient microservice (foundation only)
+    EHRPlatform.Services.Clinical/  # Clinical microservice (foundation only)
+    ... (8 more microservices — foundation scaffolded)
+frontend/                        # Angular 18 app (complete UI, not yet running on Replit)
+docs/                            # Architecture, API spec, security, DB schema
 ```
 
-### Full Stack (requires Docker)
-The backend microservices depend on external services (PostgreSQL, Kafka, RabbitMQ, Redis, Elasticsearch) that require Docker:
+## Running the Identity Service
 
-```bash
-# Start infrastructure
-docker-compose up -d
+The workflow **Identity Service** runs the backend auth service:
 
-# Start microservices
-docker-compose -f docker-compose.yml -f docker-compose.services.yml up
+```
+cd backend && dotnet run --project src/EHRPlatform.Services.Identity
 ```
 
-> **Note**: Docker is not natively available on Replit. Use the Docker Compose files locally or deploy to a Docker-capable environment (Azure, AWS, GCP, on-premises).
+- Starts on **port 5000**
+- Swagger UI: `http://localhost:5000/swagger`
+- Health check: `http://localhost:5000/health`
+- On first start: automatically creates all DB tables and seeds default roles
 
-## Architecture
+## Required Environment Variables
 
-### Communication Strategy
-See [`docs/COMMUNICATION_STRATEGY.md`](docs/COMMUNICATION_STRATEGY.md) for the full inter-service communication design.
+Set in Replit Secrets / environment:
 
-**Summary**:
-- **Kafka** — primary domain event bus (PatientCreated, LabResultReady, AuditLog)
-- **RabbitMQ** — background job queues (notifications, ES indexing, report generation)
-- **MassTransit** — unified abstraction over both transports (sagas, retry, dead-letter)
-- **SignalR** — real-time push from Kafka → Angular dashboard (lab results, alerts)
-- **YARP** — API Gateway with JWT auth, rate limiting, health checks
+| Variable         | Purpose                                       |
+|------------------|-----------------------------------------------|
+| `JWT_SECRET`     | Signs JWT access tokens (64-char hex)         |
+| `ENCRYPTION_KEY` | AES-256 key for PHI encryption (32 chars)     |
+| `PGHOST` etc.    | Auto-provided by Replit managed PostgreSQL    |
 
-### Service Ports
-| Service | Port | Description |
-|---------|------|-------------|
-| API Gateway | 5000 | YARP reverse proxy, entry point |
-| Identity | 5001 | JWT auth, user management |
-| Patient | 5002 | Patient CRUD + Kafka events + Saga |
-| Clinical | 5003 | Clinical records, lab orders |
-| Notification | 5006 | SignalR hub + RabbitMQ consumer |
-| Kafka UI | 8080 | Topic management |
-| RabbitMQ UI | 15672 | Queue management (ehr_user / ehr_password) |
-| Elasticsearch | 9200 | Full-text search |
-| Kibana | 5601 | Log visualization |
-| Frontend | 4200 | Angular dev server |
+## Database Strategy (from spec)
 
-## Tech Stack
+Polyglot persistence target:
+- **PostgreSQL** — primary OLTP (EF Core + Dapper)
+- **Redis** — caching, sessions, rate limiting
+- **Elasticsearch** — full-text patient/record search
+- **MongoDB** — clinical documents, audit logs (high volume)
 
-### Backend (ASP.NET Core 8)
-- **MassTransit 8** — Kafka + RabbitMQ unified messaging
-- **MediatR 12** — CQRS command/query pipeline
-- **Polly 8** — retry, circuit breaker, timeout resilience policies
-- **OpenTelemetry 1.7** — distributed tracing
-- **Entity Framework Core 8** — PostgreSQL (Npgsql)
-- **FluentValidation 11** — command validation
-- **Serilog 3** — structured logging
-- **Mapster 7** — object mapping
-- **YARP 2** — reverse proxy / API gateway
+Only PostgreSQL is active for the Identity Service. The `EHRPlatform.Common` library already has Redis and Elasticsearch clients wired up for future services.
 
-### Frontend (Angular 18)
-- **NgRx 18** — state management
-- **PrimeNG 18** — UI component library
-- **Tailwind CSS 3** — utility-first styling
-- **FullCalendar 6** — appointment scheduling
-- **Chart.js 4** — analytics dashboards
+## Identity Service — Endpoints
 
-## Key Design Decisions
+| Method | Path                         | Auth     | Description                  |
+|--------|------------------------------|----------|------------------------------|
+| POST   | /api/v1/auth/register        | None     | Self-register a new user     |
+| POST   | /api/v1/auth/login           | None     | Login → JWT + refresh token  |
+| POST   | /api/v1/auth/refresh         | None     | Refresh access token         |
+| POST   | /api/v1/auth/logout          | Bearer   | Revoke refresh token         |
 
-### Outbox Pattern
-All events are written to an outbox table in the same database transaction as the entity changes. A `BackgroundService` polls and publishes with retry — no events are lost on service restart (HIPAA requirement).
+## What Was Done During Setup
 
-### Saga (PatientRegistrationSaga)
-Orchestrates post-registration steps (welcome notification, Elasticsearch indexing, billing account creation) using MassTransit StateMachine. State is persisted in PostgreSQL for auditability.
-
-### Polly Resilience
-`ResilientEventPublisher` wraps raw Kafka publish with retry (3×, exponential) and circuit breaker (5 failures → open 30s).
+- Upgraded runtime module from dotnet-7.0 → dotnet-8.0
+- Generated JWT_SECRET and ENCRYPTION_KEY automatically
+- Fixed all compile errors (duplicate class definitions across validator/command files)
+- Removed 10 junk/duplicate files from the Application layer
+- Extracted 4 inline domain event classes into proper `Domain/Events/` files
+- Added `appsettings.Development.json`
+- Fixed PostgreSQL SSL mode for Replit local database
 
 ## User Preferences
 
-- Keep the existing project structure — do not restructure or migrate
-- Prefer explicit DI registration over convention-based scanning
-- HIPAA: never include PII in log messages, trace tags, or event payloads without encryption
-- Follow the transport decision matrix in `docs/COMMUNICATION_STRATEGY.md` when adding new events
+- Deep, thorough refactoring preferred — clean up duplicates and legacy patterns
+- Backend-first focus; Identity Service is the starting point

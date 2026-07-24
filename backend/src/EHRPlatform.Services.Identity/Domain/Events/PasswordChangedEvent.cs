@@ -4,7 +4,7 @@ namespace EHRPlatform.Services.Identity.Domain.Events;
 
 public class PasswordChangedEvent : IntegrationEvent
 {
-    public Guid UserId { get; set; }
+    public new Guid UserId { get; set; }
     public string Email { get; set; } = string.Empty;
 
     public PasswordChangedEvent() { }

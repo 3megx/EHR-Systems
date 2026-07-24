@@ -99,7 +99,10 @@ try
 
     app.UseSwagger();
     app.UseSwaggerUI(c =>
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EHR Identity Service v1"));
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EHR Identity Service v1");
+        c.RoutePrefix = string.Empty; // serve Swagger UI at root "/"
+    });
 
     app.UseSerilogRequestLogging();
     app.UseCors("AllowAll");
@@ -142,8 +145,15 @@ static string BuildConnectionString(IConfiguration config)
     var pass = Environment.GetEnvironmentVariable("PGPASSWORD");
 
     if (!string.IsNullOrEmpty(host))
-        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};" +
-               "SSL Mode=Require;Trust Server Certificate=true";
+    {
+        // Replit's managed PostgreSQL runs locally without SSL.
+        // Only enable SSL when connecting to external/cloud hosts (detected by presence of a dot in the hostname).
+        var needsSsl = host.Contains('.');
+        var sslClause = needsSsl
+            ? "SSL Mode=Require;Trust Server Certificate=true;"
+            : "SSL Mode=Disable;";
+        return $"Host={host};Port={port};Database={db};Username={user};Password={pass};{sslClause}";
+    }
 
     throw new InvalidOperationException(
         "Database connection not configured. Set ConnectionStrings__DefaultConnection or PGHOST.");
