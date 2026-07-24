@@ -1,4 +1,6 @@
 using EHRPlatform.Common.Extensions;
+using EHRPlatform.Common.Health;
+using EHRPlatform.Common.Messaging;
 using EHRPlatform.Services.Patient.Data;
 using EHRPlatform.Services.Patient.Messaging.Consumers;
 using EHRPlatform.Services.Patient.Sagas;
@@ -17,20 +19,81 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ── Database ──────────────────────────────────────────────────────────────────
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ── Database (PostgreSQL via Replit env vars or explicit connection string) ────
+var connectionString = BuildConnectionString(builder.Configuration);
+builder.Services.AddPostgresDataAccess<PatientContext>(connectionString);
 
-builder.Services.AddDbContext<PatientContext>(options =>
-    options.UseNpgsql(
-        connectionString,
-        b => b.MigrationsAssembly("EHRPlatform.Services.Patient")));
+// ── Outbox repository (writes domain events atomically with patient data) ──────
+builder.Services.AddScoped<IOutboxRepository>(sp =>
+    new OutboxRepository(sp.GetRequiredService<PatientContext>()));
 
 // ── CQRS (MediatR + FluentValidation + pipeline behaviors) ───────────────────
 builder.Services.AddCQRSFromCurrentAssembly();
 
-// ── Redis Cache ───────────────────────────────────────────────────────────────
-builder.Services.AddEHRCommon(builder.Configuration);
+// ── Redis Caching (optional — degrades gracefully if unavailable) ─────────────
+var redisConnStr = builder.Configuration["Redis:ConnectionString"]
+    ?? builder.Configuration["EHRCommon:RedisConnectionString"]
+    ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+
+if (!string.IsNullOrEmpty(redisConnStr))
+{
+    try
+    {
+        builder.Services.AddRedisCaching(redisConnStr);
+        Log.Information("Redis caching enabled for Patient Service");
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Redis not available for Patient Service — caching disabled");
+    }
+}
+else
+{
+    Log.Warning("Redis connection string not configured — caching disabled");
+}
+
+// ── Elasticsearch (optional — degrades gracefully if unavailable) ─────────────
+var esUrl = builder.Configuration["Elasticsearch:Url"]
+    ?? Environment.GetEnvironmentVariable("ELASTICSEARCH_URL");
+
+if (!string.IsNullOrEmpty(esUrl))
+{
+    try
+    {
+        builder.Services.AddElasticsearchSearch(esUrl);
+        Log.Information("Elasticsearch enabled for Patient Service at {Url}", esUrl);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Elasticsearch not available — search disabled for Patient Service");
+    }
+}
+else
+{
+    Log.Warning("Elasticsearch:Url not configured — patient search disabled");
+}
+
+// ── MongoDB (optional — used for clinical documents, audit logs, device data) ──
+var mongoConnStr  = builder.Configuration["MongoDB:ConnectionString"]
+    ?? Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
+var mongoDbName   = builder.Configuration["MongoDB:DatabaseName"] ?? "ehr_patient";
+
+if (!string.IsNullOrEmpty(mongoConnStr))
+{
+    try
+    {
+        builder.Services.AddMongoDataAccess(mongoConnStr, mongoDbName);
+        Log.Information("MongoDB enabled for Patient Service, database: {Db}", mongoDbName);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "MongoDB not available — document store disabled for Patient Service");
+    }
+}
+else
+{
+    Log.Warning("MongoDB:ConnectionString not configured — document store disabled");
+}
 
 // ── Kafka raw publisher + resilience decorator (outbox uses this) ─────────────
 var kafkaServers = builder.Configuration["Kafka:BootstrapServers"] ?? "localhost:9092";
@@ -68,7 +131,8 @@ builder.Services.AddEHRTelemetry(builder.Configuration, "patient-service");
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? throw new InvalidOperationException("JWT secret not configured");
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? throw new InvalidOperationException("JWT_SECRET not configured");
 builder.Services.AddJwtAuthentication(jwtSecret);
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
@@ -79,17 +143,27 @@ builder.Services.AddCors(options =>
 });
 
 // ── Health Checks ─────────────────────────────────────────────────────────────
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<PatientContext>();
+var healthBuilder = builder.Services.AddHealthChecks()
+    .AddDbContextCheck<PatientContext>("postgres-patient", tags: new[] { "db", "postgres" });
+
+if (!string.IsNullOrEmpty(redisConnStr))
+    healthBuilder.AddCacheHealthCheck("redis-patient");
+
+if (!string.IsNullOrEmpty(esUrl))
+    healthBuilder.AddElasticsearchHealthCheck("elasticsearch-patient");
+
+if (!string.IsNullOrEmpty(mongoConnStr))
+    healthBuilder.AddMongoHealthCheck("mongodb-patient");
 
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Migrations ────────────────────────────────────────────────────────────────
+// ── Migrations (runs pending EF Core migrations at startup) ──────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PatientContext>();
-    await db.Database.MigrateAsync();
+    await db.Database.EnsureCreatedAsync();
+    Log.Information("Patient database schema verified/created");
 }
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
@@ -100,7 +174,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -108,3 +181,41 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 await app.RunAsync();
+
+// ── Build Npgsql connection string from Replit PG* env vars ──────────────────
+static string BuildConnectionString(IConfiguration config)
+{
+    var explicit_ = config.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(explicit_))
+    {
+        // If the explicit connection string points to localhost, it's the docker-compose
+        // default — prefer Replit env vars if they're present.
+        var host = Environment.GetEnvironmentVariable("PGHOST");
+        if (!string.IsNullOrEmpty(host) && explicit_.Contains("localhost"))
+        {
+            // Fall through to build from env vars below.
+        }
+        else
+        {
+            return explicit_;
+        }
+    }
+
+    var pgHost = Environment.GetEnvironmentVariable("PGHOST");
+    var pgPort = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+    var pgDb   = Environment.GetEnvironmentVariable("PGDATABASE");
+    var pgUser = Environment.GetEnvironmentVariable("PGUSER");
+    var pgPass = Environment.GetEnvironmentVariable("PGPASSWORD");
+
+    if (!string.IsNullOrEmpty(pgHost))
+    {
+        var needsSsl = pgHost.Contains('.');
+        var sslClause = needsSsl
+            ? "SSL Mode=Require;Trust Server Certificate=true;"
+            : "SSL Mode=Disable;";
+        return $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPass};{sslClause}";
+    }
+
+    throw new InvalidOperationException(
+        "Database connection not configured. Set ConnectionStrings__DefaultConnection or PGHOST.");
+}
