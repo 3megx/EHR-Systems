@@ -94,24 +94,18 @@ public class AggregateMetricsCommandHandler : ICommandHandler<AggregateMetricsCo
 
     private (DateTime, DateTime) GetPeriodDates(string frequency, DateTime date)
     {
-        return frequency.ToLower() switch
+        switch (frequency.ToLower())
         {
-            "daily" => (date.Date, date.Date.AddDays(1)),
-            "weekly" => 
-            {
+            case "weekly":
                 var startOfWeek = date.AddDays(-(int)date.DayOfWeek);
-                var start = startOfWeek.Date;
-                var end = start.AddDays(7);
-                yield return (start, end);
-            },
-            "monthly" =>
-            {
-                var start = new DateTime(date.Year, date.Month, 1);
-                var end = start.AddMonths(1);
-                yield return (start, end);
-            },
-            _ => (date.Date, date.Date.AddDays(1))
-        };
+                var weekStart = startOfWeek.Date;
+                return (weekStart, weekStart.AddDays(7));
+            case "monthly":
+                var monthStart = new DateTime(date.Year, date.Month, 1);
+                return (monthStart, monthStart.AddMonths(1));
+            default: // daily
+                return (date.Date, date.Date.AddDays(1));
+        }
     }
 
     private string GetCategory(string eventType)

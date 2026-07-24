@@ -66,4 +66,14 @@ public class UserResponseDto
     /// Who last updated the user.
     /// </summary>
     public Guid? UpdatedBy { get; set; }
+
+    /// <summary>
+    /// Whether the user's email has been confirmed.
+    /// </summary>
+    public bool EmailConfirmed { get; set; }
+
+    /// <summary>
+    /// Whether MFA is enabled for the user.
+    /// </summary>
+    public bool MfaEnabled { get; set; }
 }

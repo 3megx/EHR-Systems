@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Notification.Domain.Events;
 /// <summary>
 /// Domain event raised when a notification is successfully sent.
 /// </summary>
-public record NotificationSentEvent : IntegrationEvent
+public class NotificationSentEvent : IntegrationEvent
 {
     public Guid NotificationId { get; set; }
     public Guid RecipientId { get; set; }

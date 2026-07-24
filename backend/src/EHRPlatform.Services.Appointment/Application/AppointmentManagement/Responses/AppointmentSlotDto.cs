@@ -7,5 +7,6 @@ public class AppointmentSlotDto
     public string Status { get; set; } = string.Empty; // Available, Booked, Blocked
     public Guid? AppointmentId { get; set; }
     public Guid? PatientId { get; set; }
+    public string AppointmentType { get; set; } = string.Empty;
 }
 

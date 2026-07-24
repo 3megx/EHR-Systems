@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Appointment.Domain.Events;
 /// <summary>
 /// Domain event raised when an appointment is cancelled.
 /// </summary>
-public record AppointmentCancelledEvent : IntegrationEvent
+public class AppointmentCancelledEvent : IntegrationEvent
 {
     /// <summary>
     /// Gets the appointment identifier.

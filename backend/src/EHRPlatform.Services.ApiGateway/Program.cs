@@ -1,28 +1,41 @@
-using Yarp.ReverseProxy.Configuration;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Serilog;
-using EHRPlatform.Common.Extensions;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .Enrich.FromLogContext()
+    .CreateBootstrapLogger();
 
-// Configure Serilog
-builder.Services.AddSerilogLogging();
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-// Add YARP Reverse Proxy
-builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    // ── Serilog ───────────────────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, cfg) =>
+        cfg.MinimumLevel.Information()
+           .WriteTo.Console()
+           .Enrich.FromLogContext());
 
-// Add services
-builder.Services
-    // Cache for gateway routing decisions
-    .AddStackExchangeRedisCache(options =>
+    // ── YARP Reverse Proxy ────────────────────────────────────────────────────
+    builder.Services.AddReverseProxy()
+        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
+    // ── Redis cache (optional — skips if not configured) ──────────────────────
+    var redisConn = builder.Configuration.GetConnectionString("Redis");
+    if (!string.IsNullOrEmpty(redisConn))
     {
-        options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    })
-    
-    // API documentation
-    .AddEndpointsApiExplorer()
-    .AddSwaggerGen(options =>
+        builder.Services.AddStackExchangeRedisCache(o => o.Configuration = redisConn);
+    }
+
+    // ── Swagger ───────────────────────────────────────────────────────────────
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
+        options.SwaggerDoc("v1", new OpenApiInfo { Title = "EHR API Gateway", Version = "v1" });
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
@@ -30,77 +43,85 @@ builder.Services
             BearerFormat = "JWT",
             Description = "JWT Authorization header using the Bearer scheme"
         });
-        
-        options.OperationFilter<SecurityRequirementsOperationFilter>();
-    })
-    
-    // Authentication
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var jwtSecret = builder.Configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("JWT secret not found");
-        
-        options.TokenValidationParameters = new TokenValidationParameters
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            ValidateLifetime = true
-        };
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
 
-builder.Services.AddAuthorization();
+    // ── JWT Authentication ────────────────────────────────────────────────────
+    var jwtSecret = builder.Configuration["Jwt:Secret"]
+        ?? Environment.GetEnvironmentVariable("JWT_SECRET")
+        ?? throw new InvalidOperationException("JWT_SECRET is required");
 
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policyBuilder =>
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                ValidateIssuer = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "ehr-platform",
+                ValidateAudience = true,
+                ValidAudience = builder.Configuration["Jwt:Audience"] ?? "ehr-api",
+                ValidateLifetime = true
+            };
+        });
+
+    builder.Services.AddAuthorization();
+
+    // ── CORS ──────────────────────────────────────────────────────────────────
+    builder.Services.AddCors(options =>
+        options.AddPolicy("AllowAll", p =>
+            p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
+    // ── Rate limiting (built-in, .NET 7+) ────────────────────────────────────
+    builder.Services.AddRateLimiter(options =>
     {
-        policyBuilder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        options.AddFixedWindowLimiter("fixed", fwOptions =>
+        {
+            fwOptions.PermitLimit = 100;
+            fwOptions.Window = TimeSpan.FromSeconds(60);
+        });
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     });
-});
 
-// Rate limiting
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddFixedWindowLimiter("fixed", fwOptions =>
+    builder.Services.AddHealthChecks();
+
+    // ── Build ─────────────────────────────────────────────────────────────────
+    var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
     {
-        fwOptions.PermitLimit = 100;
-        fwOptions.Window = TimeSpan.FromSeconds(60);
-    });
+        app.UseSwagger();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "EHR API Gateway v1"));
+    }
 
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
+    app.UseSerilogRequestLogging();
+    app.UseCors("AllowAll");
+    app.UseRateLimiter();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapHealthChecks("/health");
+    app.MapReverseProxy();
 
-// Build app
-var app = builder.Build();
-
-// Configure pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Information("EHR API Gateway starting");
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-app.UseSerilogRequestLogging();
-app.UseCors("AllowAll");
-app.UseRateLimiter();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Health check
-app.MapHealthChecks("/health");
-
-// YARP routes (configured in appsettings.json)
-app.MapReverseProxy();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "API Gateway terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

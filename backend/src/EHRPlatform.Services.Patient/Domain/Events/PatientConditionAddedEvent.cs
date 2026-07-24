@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Patient.Domain.Events;
 /// <summary>
 /// Patient condition added event.
 /// </summary>
-public record PatientConditionAddedEvent : IntegrationEvent
+public class PatientConditionAddedEvent : IntegrationEvent
 {
     public Guid PatientId { get; set; }
     public string Condition { get; set; }

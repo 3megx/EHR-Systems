@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Notification.Domain.Events;
 /// <summary>
 /// Domain event raised when a notification is bounced (invalid recipient).
 /// </summary>
-public record NotificationBouncedEvent : IntegrationEvent
+public class NotificationBouncedEvent : IntegrationEvent
 {
     public Guid NotificationId { get; set; }
     public Guid RecipientId { get; set; }

@@ -1,24 +1,24 @@
+using EHRPlatform.Common.Behaviors;
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
+using EHRPlatform.Services.Appointment.Application.AppointmentManagement.Responses;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Queries;
 
 /// <summary>
 /// Get appointment by ID - CACHED query.
 /// </summary>
-public record GetAppointmentQuery : ICachedQuery<AppointmentResponseDto>
+public record GetAppointmentQuery : IQuery<AppointmentResponseDto>, ICachedQuery
 {
     public Guid AppointmentId { get; init; }
 
     public string CacheKey => $"appointment_{AppointmentId}";
-    public int CacheDurationSeconds => 600; // 10 minutes
+    public TimeSpan? Duration => TimeSpan.FromSeconds(600);
 }
 
 /// <summary>
-/// Get patient appointments.
-/// Paginated, optional date range filter, CACHED.
+/// Get patient appointments (paginated, optional date range filter).
 /// </summary>
-public record GetPatientAppointmentsQuery : ICachedQuery<AppointmentListDto>
+public record GetPatientAppointmentsQuery : IQuery<AppointmentListDto>, ICachedQuery
 {
     public Guid PatientId { get; init; }
     public DateTime? FromDate { get; init; }
@@ -27,33 +27,30 @@ public record GetPatientAppointmentsQuery : ICachedQuery<AppointmentListDto>
     public int PageSize { get; init; } = 20;
 
     public string CacheKey => $"appointments_patient_{PatientId}_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}_{PageNumber}_{PageSize}";
-    public int CacheDurationSeconds => 600;
+    public TimeSpan? Duration => TimeSpan.FromSeconds(600);
 }
 
 /// <summary>
-/// Get provider appointments.
-/// Calendar view for scheduling.
-/// CACHED.
+/// Get provider appointments (calendar view).
 /// </summary>
-public record GetProviderAppointmentsQuery : ICachedQuery<ProviderAppointmentCalendarDto>
+public record GetProviderAppointmentsQuery : IQuery<ProviderAppointmentCalendarDto>, ICachedQuery
 {
     public Guid ProviderId { get; init; }
     public DateTime Date { get; init; }
 
     public string CacheKey => $"appointments_provider_{ProviderId}_{Date:yyyyMMdd}";
-    public int CacheDurationSeconds => 300; // 5 minutes - shorter for real-time calendar
+    public TimeSpan? Duration => TimeSpan.FromSeconds(300);
 }
 
 /// <summary>
 /// Get provider availability slots.
-/// CACHED.
 /// </summary>
-public record GetProviderAvailabilityQuery : ICachedQuery<ProviderAvailabilityListDto>
+public record GetProviderAvailabilityQuery : IQuery<ProviderAvailabilityListDto>, ICachedQuery
 {
     public Guid ProviderId { get; init; }
     public DateTime FromDate { get; init; }
     public DateTime ToDate { get; init; }
 
     public string CacheKey => $"availability_{ProviderId}_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}";
-    public int CacheDurationSeconds => 300;
+    public TimeSpan? Duration => TimeSpan.FromSeconds(300);
 }

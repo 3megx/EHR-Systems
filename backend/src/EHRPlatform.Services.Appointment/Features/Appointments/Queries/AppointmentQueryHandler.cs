@@ -1,8 +1,9 @@
 using EHRPlatform.Common.CQRS;
 using EHRPlatform.Common.Data;
+using EHRPlatform.Services.Appointment.Application.AppointmentManagement.Mappers;
+using EHRPlatform.Services.Appointment.Application.AppointmentManagement.Responses;
 using EHRPlatform.Services.Appointment.Features.Appointments.Domain;
-using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
-using EHRPlatform.Services.Appointment.Mappings;
+using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Queries;
 

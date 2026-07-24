@@ -2,7 +2,7 @@ using EHRPlatform.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Logging
 builder.Host.UseSerilog((context, config) =>

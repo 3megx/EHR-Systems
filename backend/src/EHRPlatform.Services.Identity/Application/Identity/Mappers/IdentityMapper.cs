@@ -37,9 +37,9 @@ public class IdentityMapper : MappingServiceBase<User, UserResponseDto>
                 IsActive = user.IsActive,
                 LastLogin = user.LastLogin,
                 CreatedAt = user.CreatedAt,
-                CreatedBy = user.CreatedBy.ToString(),
+                CreatedBy = user.CreatedBy,
                 UpdatedAt = user.UpdatedAt,
-                UpdatedBy = user.UpdatedBy?.ToString() ?? string.Empty,
+                UpdatedBy = user.UpdatedBy,
                 Roles = MapRoles(user.Roles),
                 EmailConfirmed = user.EmailConfirmed,
                 MfaEnabled = user.MfaEnabled

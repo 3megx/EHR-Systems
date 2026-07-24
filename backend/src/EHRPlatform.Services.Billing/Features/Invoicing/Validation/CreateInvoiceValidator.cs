@@ -1,4 +1,5 @@
 using FluentValidation;
+using EHRPlatform.Services.Billing.Application.Invoicing.Requests;
 using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 
 namespace EHRPlatform.Services.Billing.Features.Invoicing.Validation;
@@ -14,7 +15,7 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceCommand>
     }
 }
 
-public class LineItemValidator : AbstractValidator<LineItemRequest>
+public class LineItemValidator : AbstractValidator<LineItemRequestDto>
 {
     public LineItemValidator()
     {

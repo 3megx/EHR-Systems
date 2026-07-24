@@ -12,6 +12,6 @@ public class MfaSetupConfiguration : IEntityTypeConfiguration<MfaSetup>
     public void Configure(EntityTypeBuilder<MfaSetup> entity)
     {
         entity.HasKey(e => e.Id);
-        entity.HasOne(e => e.User).WithMany(u => u.MfaSetups).HasForeignKey(e => e.UserId);
+        entity.HasIndex(e => e.UserId);
     }
 }
