@@ -1,5 +1,7 @@
 using EHRPlatform.Common.Data;
 using EHRPlatform.Common.Extensions;
+using EHRPlatform.Common.Health;
+using EHRPlatform.Common.Search;
 using EHRPlatform.Common.Security;
 using EHRPlatform.Services.Identity.Application.Identity.Extensions;
 using EHRPlatform.Services.Identity.Data;
@@ -7,6 +9,7 @@ using EHRPlatform.Services.Identity.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using StackExchange.Redis;
 
 // Bootstrap logger to capture startup errors
 Log.Logger = new LoggerConfiguration()
@@ -54,7 +57,7 @@ try
         });
     });
 
-    // ── Database (Replit PostgreSQL) ──────────────────────────────────────────
+    // ── Database (PostgreSQL) ─────────────────────────────────────────────────
     var connectionString = BuildConnectionString(builder.Configuration);
     builder.Services.AddPostgresDataAccess<IdentityContext>(connectionString);
 
@@ -79,8 +82,49 @@ try
 
     builder.Services.AddSingleton<IJwtTokenService>(
         new JwtTokenService(jwtSecret, jwtIssuer, jwtAudience, jwtExpMin));
-
     builder.Services.AddJwtAuthentication(jwtSecret, jwtIssuer, jwtAudience);
+
+    // ── Redis Caching (optional — degrades gracefully if unavailable) ─────────
+    var redisConnStr = builder.Configuration["Redis:ConnectionString"]
+        ?? Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+
+    if (!string.IsNullOrEmpty(redisConnStr))
+    {
+        try
+        {
+            builder.Services.AddRedisCaching(redisConnStr);
+            Log.Information("Redis caching enabled");
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Redis not available — caching disabled");
+        }
+    }
+    else
+    {
+        Log.Warning("Redis:ConnectionString not configured — caching disabled");
+    }
+
+    // ── Elasticsearch (optional — degrades gracefully if unavailable) ─────────
+    var esUrl = builder.Configuration["Elasticsearch:Url"]
+        ?? Environment.GetEnvironmentVariable("ELASTICSEARCH_URL");
+
+    if (!string.IsNullOrEmpty(esUrl))
+    {
+        try
+        {
+            builder.Services.AddElasticsearchSearch(esUrl);
+            Log.Information("Elasticsearch enabled at {Url}", esUrl);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Elasticsearch not available — search disabled");
+        }
+    }
+    else
+    {
+        Log.Warning("Elasticsearch:Url not configured — search disabled");
+    }
 
     // ── CORS ─────────────────────────────────────────────────────────────────
     builder.Services.AddCors(options =>
@@ -88,8 +132,16 @@ try
             p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
     // ── Health checks ─────────────────────────────────────────────────────────
-    builder.Services.AddHealthChecks()
-        .AddDbContextCheck<IdentityContext>();
+    var healthBuilder = builder.Services.AddHealthChecks()
+        .AddDbContextCheck<IdentityContext>("postgres-identity", tags: new[] { "db", "postgres" });
+
+    // Redis health check — only when Redis is wired up
+    if (!string.IsNullOrEmpty(redisConnStr))
+        healthBuilder.AddCacheHealthCheck("redis-identity");
+
+    // Elasticsearch health check — only when ES is wired up
+    if (!string.IsNullOrEmpty(esUrl))
+        healthBuilder.AddElasticsearchHealthCheck("elasticsearch-identity");
 
     // ── Kestrel: listen on port 5000 (Replit preview port) ───────────────────
     builder.WebHost.UseUrls("http://0.0.0.0:5000");
@@ -111,12 +163,15 @@ try
     app.MapControllers();
     app.MapHealthChecks("/health");
 
-    // ── Auto-create schema on first run (idempotent) ──────────────────────────
+    // ── Auto-create / migrate schema on first run ─────────────────────────────
+    // EnsureCreatedAsync: fast for development; switch to MigrateAsync once
+    // you generate the first EF migration with:
+    //   dotnet ef migrations add Initial --project src/EHRPlatform.Services.Identity
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<IdentityContext>();
         await db.Database.EnsureCreatedAsync();
-        Log.Information("Database schema verified/created");
+        Log.Information("Identity database schema verified/created");
     }
 
     Log.Information("EHR Identity Service starting on http://0.0.0.0:5000");
@@ -147,7 +202,7 @@ static string BuildConnectionString(IConfiguration config)
     if (!string.IsNullOrEmpty(host))
     {
         // Replit's managed PostgreSQL runs locally without SSL.
-        // Only enable SSL when connecting to external/cloud hosts (detected by presence of a dot in the hostname).
+        // Only enable SSL when connecting to external/cloud hosts.
         var needsSsl = host.Contains('.');
         var sslClause = needsSsl
             ? "SSL Mode=Require;Trust Server Certificate=true;"
