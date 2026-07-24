@@ -33,9 +33,9 @@ public abstract class BaseDbContext : DbContext
         configurationBuilder.Properties<string>()
             .HaveMaxLength(500); // Prevent unbounded strings
 
-        // GUID properties use optimized UUID storage
+        // GUID properties use field-backed access mode (performance optimization)
         configurationBuilder.Properties<Guid>()
-            .UsePropertyAccessMode(PropertyAccessMode.Property);
+            .HaveConversion<Guid>();
     }
 
     /// <summary>
@@ -55,8 +55,7 @@ public abstract class BaseDbContext : DbContext
         // Configure all AuditableEntity types
         ConfigureAuditableEntity(modelBuilder);
 
-        // Build all queries with soft-delete exclusion
-        modelBuilder.HasQueryFilter<BaseEntity>(e => e.DeletedAt == null);
+        // Soft-delete global query filters are applied per entity type in ApplySoftDeleteFilter above.
     }
 
     /// <summary>
