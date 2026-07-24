@@ -23,9 +23,10 @@ public class User : AuditableEntity
     public string? MfaSecretBackupCodes { get; set; }
 
     // Collections
-    public ICollection<UserRole> Roles { get; } = new List<UserRole>();
+    public ICollection<UserRole>     Roles         { get; } = new List<UserRole>();
     public ICollection<RefreshToken> RefreshTokens { get; } = new List<RefreshToken>();
-    public ICollection<LoginAudit> LoginAudits { get; } = new List<LoginAudit>();
+    public ICollection<LoginAudit>   LoginAudits   { get; } = new List<LoginAudit>();
+    public ICollection<MfaSetup>     MfaSetups     { get; } = new List<MfaSetup>();
 
     public bool IsLocked() => LockoutEnd.HasValue && LockoutEnd > DateTime.UtcNow;
 

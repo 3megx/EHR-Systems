@@ -37,6 +37,10 @@ public static class DataAccessExtensions
         services.AddScoped<IUnitOfWork>(sp =>
             new UnitOfWork(sp.GetRequiredService<TDbContext>()));
 
+        // Dapper façade — reuses the same connection as EF Core.
+        services.AddScoped<IDapperContext>(sp =>
+            new DapperContext(sp.GetRequiredService<TDbContext>()));
+
         services.AddScoped<IDatabaseMigrator, DatabaseMigrator<TDbContext>>();
 
         return services;
@@ -55,7 +59,16 @@ public static class DataAccessExtensions
 
         return services.AddDataAccess<TDbContext>(options =>
             options
-                .UseNpgsql(connectionString, npgsql => npgsql.CommandTimeout(30))
+                .UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.CommandTimeout(30);
+                    // Automatically retry transient failures (network blips, brief
+                    // connection pool exhaustion, Postgres restart).
+                    npgsql.EnableRetryOnFailure(
+                        maxRetryCount:   5,
+                        maxRetryDelay:   TimeSpan.FromSeconds(30),
+                        errorCodesToAdd: null);
+                })
                 .EnableDetailedErrors());
     }
 

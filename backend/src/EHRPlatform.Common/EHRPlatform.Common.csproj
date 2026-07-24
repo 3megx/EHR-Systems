@@ -62,6 +62,7 @@
     
     <!-- Data Access -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
     
     <!-- Serilog DI integration -->
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />

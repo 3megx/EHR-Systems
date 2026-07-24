@@ -1,4 +1,4 @@
-modules = ["dotnet-7.0", "nodejs-20", "dotnet-8.0"]
+modules = ["dotnet-7.0", "nodejs-20", "dotnet-8.0", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
@@ -29,3 +29,13 @@ outputType = "webview"
 task = "shell.exec"
 args = "cd backend && dotnet run --project src/EHRPlatform.Services.Identity"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+ENCRYPTION_KEY = "6a6cf17800a0302839da7c01f2e454b9"
+JWT_SECRET = "7596ffa786dfbfbacbeab9629a474bdb61a74aaec7225881b0d8b1e5abf23644"
+
+[[ports]]
+localPort = 5000
+externalPort = 80

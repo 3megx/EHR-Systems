@@ -4,7 +4,7 @@ namespace EHRPlatform.Services.Identity.Domain.Events;
 
 public class RoleAssignedEvent : IntegrationEvent
 {
-    public Guid UserId { get; set; }
+    public new Guid UserId { get; set; }
     public Guid RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
 

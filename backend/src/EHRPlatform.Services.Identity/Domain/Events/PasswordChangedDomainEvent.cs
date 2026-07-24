@@ -1,0 +1,14 @@
+using EHRPlatform.Common.Entities;
+
+namespace EHRPlatform.Services.Identity.Domain.Events;
+
+/// <summary>
+/// In-process domain event raised when a user changes their password.
+/// Consumed by pipeline behaviors within the Identity service.
+/// For cross-service messaging, use <see cref="PasswordChangedEvent"/> (IntegrationEvent).
+/// </summary>
+public class PasswordChangedDomainEvent : DomainEvent
+{
+    public Guid     UserId    { get; set; }
+    public DateTime ChangedAt { get; set; }
+}
