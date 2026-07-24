@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Appointment.Domain.Events;
 /// <summary>
 /// Domain event raised when an appointment is checked in.
 /// </summary>
-public record AppointmentCheckedInEvent : IntegrationEvent
+public class AppointmentCheckedInEvent : IntegrationEvent
 {
     /// <summary>
     /// Gets the appointment identifier.

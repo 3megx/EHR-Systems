@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Patient.Domain.Events;
 /// <summary>
 /// Patient created domain event.
 /// </summary>
-public record PatientCreatedEvent : IntegrationEvent
+public class PatientCreatedEvent : IntegrationEvent
 {
     public Guid PatientId { get; set; }
     public string FirstName { get; set; }

@@ -2,7 +2,7 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Clinical.Domain.Events;
 
-public record VitalSignsRecordedEvent : IntegrationEvent
+public class VitalSignsRecordedEvent : IntegrationEvent
 {
     public Guid ClinicalNoteId { get; set; }
     public Guid PatientId { get; set; }

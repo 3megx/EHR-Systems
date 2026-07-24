@@ -2,7 +2,7 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Prescription.Domain.Events;
 
-public record PrescriptionRefillApprovedEvent : IntegrationEvent
+public class PrescriptionRefillApprovedEvent : IntegrationEvent
 {
     public Guid PrescriptionId { get; set; }
     public Guid PatientId { get; set; }

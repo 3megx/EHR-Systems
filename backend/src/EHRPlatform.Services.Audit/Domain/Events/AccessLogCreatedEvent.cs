@@ -2,7 +2,7 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Audit.Domain.Events;
 
-public record AccessLogCreatedEvent : IntegrationEvent
+public class AccessLogCreatedEvent : IntegrationEvent
 {
     public Guid AccessLogId { get; set; }
     public Guid UserId { get; set; }

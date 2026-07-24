@@ -67,7 +67,7 @@ public class SetupMfaCommandHandler : ICommandHandler<SetupMfaCommand, SetupMfaR
         return new SetupMfaResponse
         {
             Secret = totpSecret,
-            QrCodeUri = GenerateQrCodeUri(user.Email, totpSecret),
+            QrCodeUrl = GenerateQrCodeUri(user.Email, totpSecret),
             BackupCodes = backupCodes
         };
     }

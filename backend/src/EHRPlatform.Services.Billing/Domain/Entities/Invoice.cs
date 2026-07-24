@@ -1,4 +1,5 @@
 using EHRPlatform.Common.Entities;
+using EHRPlatform.Common.Events;
 using EHRPlatform.Services.Billing.Domain.Events;
 
 namespace EHRPlatform.Services.Billing.Domain.Entities;

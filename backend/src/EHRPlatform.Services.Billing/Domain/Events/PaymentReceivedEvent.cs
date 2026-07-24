@@ -6,7 +6,7 @@ namespace EHRPlatform.Services.Billing.Domain.Events;
 /// Payment received event.
 /// Single Responsibility: Notify when payment is received.
 /// </summary>
-public record PaymentReceivedEvent : IntegrationEvent
+public class PaymentReceivedEvent : IntegrationEvent
 {
     public Guid InvoiceId { get; set; }
     public Guid PatientId { get; set; }

@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Notification.Domain.Events;
 /// <summary>
 /// Domain event raised when a recipient unsubscribes from notifications.
 /// </summary>
-public record NotificationUnsubscribedEvent : IntegrationEvent
+public class NotificationUnsubscribedEvent : IntegrationEvent
 {
     public Guid NotificationId { get; set; }
     public Guid RecipientId { get; set; }

@@ -6,7 +6,7 @@ namespace EHRPlatform.Services.Billing.Domain.Events;
 /// Invoice created event.
 /// Single Responsibility: Notify when invoice is created.
 /// </summary>
-public record InvoiceCreatedEvent : IntegrationEvent
+public class InvoiceCreatedEvent : IntegrationEvent
 {
     public Guid InvoiceId { get; set; }
     public Guid PatientId { get; set; }

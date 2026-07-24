@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Notification.Domain.Events;
 /// <summary>
 /// Domain event raised when a notification fails to send after max retries.
 /// </summary>
-public record NotificationFailedEvent : IntegrationEvent
+public class NotificationFailedEvent : IntegrationEvent
 {
     public Guid NotificationId { get; set; }
     public Guid RecipientId { get; set; }

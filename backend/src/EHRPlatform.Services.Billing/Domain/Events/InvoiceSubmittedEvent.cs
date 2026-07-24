@@ -6,7 +6,7 @@ namespace EHRPlatform.Services.Billing.Domain.Events;
 /// Invoice submitted to insurance event.
 /// Single Responsibility: Notify when invoice is submitted to insurance.
 /// </summary>
-public record InvoiceSubmittedEvent : IntegrationEvent
+public class InvoiceSubmittedEvent : IntegrationEvent
 {
     public Guid InvoiceId { get; set; }
     public Guid PatientId { get; set; }

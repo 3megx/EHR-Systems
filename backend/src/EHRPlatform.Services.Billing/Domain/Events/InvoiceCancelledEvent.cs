@@ -6,7 +6,7 @@ namespace EHRPlatform.Services.Billing.Domain.Events;
 /// Invoice cancelled event.
 /// Single Responsibility: Notify when invoice is cancelled.
 /// </summary>
-public record InvoiceCancelledEvent : IntegrationEvent
+public class InvoiceCancelledEvent : IntegrationEvent
 {
     public Guid InvoiceId { get; set; }
     public Guid PatientId { get; set; }

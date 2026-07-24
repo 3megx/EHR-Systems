@@ -2,7 +2,7 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Analytics.Domain.Events;
 
-public record ReportExecutedEvent : IntegrationEvent
+public class ReportExecutedEvent : IntegrationEvent
 {
     public Guid ReportId { get; set; }
     public Guid ExecutionId { get; set; }

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EHRPlatform.Services.Billing.Features.Invoicing.Commands;
 using EHRPlatform.Services.Billing.Features.Invoicing.Queries;

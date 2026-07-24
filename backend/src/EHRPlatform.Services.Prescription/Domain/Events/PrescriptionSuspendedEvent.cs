@@ -2,7 +2,7 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Prescription.Domain.Events;
 
-public record PrescriptionSuspendedEvent : IntegrationEvent
+public class PrescriptionSuspendedEvent : IntegrationEvent
 {
     public Guid PrescriptionId { get; set; }
     public Guid PatientId { get; set; }

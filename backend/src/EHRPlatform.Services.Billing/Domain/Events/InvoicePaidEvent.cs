@@ -6,7 +6,7 @@ namespace EHRPlatform.Services.Billing.Domain.Events;
 /// Invoice paid event.
 /// Single Responsibility: Notify when invoice is fully paid.
 /// </summary>
-public record InvoicePaidEvent : IntegrationEvent
+public class InvoicePaidEvent : IntegrationEvent
 {
     public Guid InvoiceId { get; set; }
     public Guid PatientId { get; set; }

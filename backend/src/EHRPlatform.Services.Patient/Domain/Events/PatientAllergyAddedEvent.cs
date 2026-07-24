@@ -5,7 +5,7 @@ namespace EHRPlatform.Services.Patient.Domain.Events;
 /// <summary>
 /// Patient allergy added event.
 /// </summary>
-public record PatientAllergyAddedEvent : IntegrationEvent
+public class PatientAllergyAddedEvent : IntegrationEvent
 {
     public Guid PatientId { get; set; }
     public string Allergen { get; set; }

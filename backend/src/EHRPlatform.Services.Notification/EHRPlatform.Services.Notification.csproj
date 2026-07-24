@@ -17,7 +17,7 @@
 
     <!-- Logging -->
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
 
     <!-- API -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />

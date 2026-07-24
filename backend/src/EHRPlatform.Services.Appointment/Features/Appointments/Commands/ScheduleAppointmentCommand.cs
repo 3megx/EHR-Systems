@@ -1,5 +1,5 @@
 using EHRPlatform.Common.CQRS;
-using EHRPlatform.Services.Appointment.Features.Appointments.Dtos.Responses;
+using EHRPlatform.Services.Appointment.Application.AppointmentManagement.Responses;
 
 namespace EHRPlatform.Services.Appointment.Features.Appointments.Commands;
 

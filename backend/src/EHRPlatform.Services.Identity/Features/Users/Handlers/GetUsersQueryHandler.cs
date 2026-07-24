@@ -6,6 +6,7 @@ using EHRPlatform.Services.Identity.Application.Identity.DTOs.Responses;
 using EHRPlatform.Services.Identity.Application.Identity.Mappers;
 using EHRPlatform.Services.Identity.Domain.Entities;
 using EHRPlatform.Services.Identity.Features.Users.Queries;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Identity.Features.Users.Handlers;
