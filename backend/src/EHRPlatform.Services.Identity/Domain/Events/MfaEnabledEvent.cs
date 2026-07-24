@@ -2,16 +2,16 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Identity.Domain.Events;
 
-public record MfaEnabledEvent : IntegrationEvent
+public class MfaEnabledEvent : IntegrationEvent
 {
     public Guid UserId { get; set; }
-    public string Email { get; set; }
-    public string MfaType { get; set; }
+    public string Email { get; set; } = string.Empty;
 
-    public MfaEnabledEvent(Guid id, string email, string type)
+    public MfaEnabledEvent() { }
+
+    public MfaEnabledEvent(Guid id, string email)
     {
         UserId = id;
-        Email = email;
-        MfaType = type;
+        Email  = email;
     }
 }

@@ -1,7 +1,31 @@
-modules = ["dotnet-7.0", "nodejs-20", "dotnet-8.0"]
+modules = ["dotnet-7.0", "nodejs-20", "postgresql-16", "dotnet-8.0"]
 
 [nix]
 channel = "stable-25_05"
 
 [agent]
 expertMode = true
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Identity Service"
+
+[[workflows.workflow]]
+name = "Identity Service"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && dotnet run --project src/EHRPlatform.Services.Identity"
+waitForPort = 5000

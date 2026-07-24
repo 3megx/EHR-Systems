@@ -2,16 +2,18 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Identity.Domain.Events;
 
-public record UserLockedEvent : IntegrationEvent
+public class UserLockedEvent : IntegrationEvent
 {
     public Guid UserId { get; set; }
-    public string Email { get; set; }
-    public string Reason { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+
+    public UserLockedEvent() { }
 
     public UserLockedEvent(Guid id, string email, string reason = "Failed login attempts")
     {
         UserId = id;
-        Email = email;
+        Email  = email;
         Reason = reason;
     }
 }

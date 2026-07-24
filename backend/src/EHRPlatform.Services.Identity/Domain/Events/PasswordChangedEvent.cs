@@ -2,16 +2,16 @@ using EHRPlatform.Common.Events;
 
 namespace EHRPlatform.Services.Identity.Domain.Events;
 
-public record PasswordChangedEvent : IntegrationEvent
+public class PasswordChangedEvent : IntegrationEvent
 {
     public Guid UserId { get; set; }
-    public string Email { get; set; }
-    public DateTime ChangedAt { get; set; }
+    public string Email { get; set; } = string.Empty;
+
+    public PasswordChangedEvent() { }
 
     public PasswordChangedEvent(Guid id, string email)
     {
         UserId = id;
-        Email = email;
-        ChangedAt = DateTime.UtcNow;
+        Email  = email;
     }
 }
