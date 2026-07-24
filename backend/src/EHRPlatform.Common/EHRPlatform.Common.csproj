@@ -39,8 +39,26 @@
     <!-- Search -->
     <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.10.0" />
     
-    <!-- Messaging -->
+    <!-- Messaging - Raw Kafka (retained for low-level access & outbox) -->
     <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+
+    <!-- MassTransit - Unified messaging abstraction -->
+    <PackageReference Include="MassTransit" Version="8.1.3" />
+    <PackageReference Include="MassTransit.Kafka" Version="8.1.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.3" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.1.3" />
+    
+    <!-- Resilience - Polly -->
+    <PackageReference Include="Polly" Version="8.2.0" />
+    <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="8.0.0" />
+
+    <!-- Observability - OpenTelemetry -->
+    <PackageReference Include="OpenTelemetry" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
     
     <!-- Data Access -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
@@ -54,6 +72,9 @@
     <!-- Encryption & Security -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.0" />
     
+    <!-- Authentication / JWT -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+
     <!-- DI & Extensions -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />

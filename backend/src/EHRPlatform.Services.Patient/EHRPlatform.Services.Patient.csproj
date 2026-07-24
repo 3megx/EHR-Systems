@@ -15,6 +15,15 @@
     <!-- CQRS & Messaging -->
     <PackageReference Include="MediatR" Version="12.1.1" />
     <PackageReference Include="FluentValidation" Version="11.8.0" />
+
+    <!-- MassTransit (Kafka + RabbitMQ) -->
+    <PackageReference Include="MassTransit" Version="8.1.3" />
+    <PackageReference Include="MassTransit.Kafka" Version="8.1.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.1.3" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.1.3" />
+
+    <!-- Resilience -->
+    <PackageReference Include="Polly" Version="8.2.0" />
     
     <!-- Mapping -->
     <PackageReference Include="Mapster" Version="7.4.0" />

@@ -60,4 +60,21 @@ public class OutboxEvent
     /// Whether this event should be retried (not yet published and below max attempts).
     /// </summary>
     public bool ShouldRetry => !IsPublished && PublishAttempts < MaxPublishAttempts;
+
+    /// <summary>
+    /// Aggregate root ID that raised this event (e.g. Patient ID).
+    /// Used for partitioning and correlation.
+    /// </summary>
+    public Guid? AggregateId { get; set; }
+
+    /// <summary>
+    /// Target transport for this event: "kafka" (default) or "rabbitmq".
+    /// Outbox processor routes accordingly.
+    /// </summary>
+    public string Transport { get; set; } = "kafka";
+
+    /// <summary>
+    /// Optional routing key / queue name used when Transport = "rabbitmq".
+    /// </summary>
+    public string? RoutingKey { get; set; }
 }
