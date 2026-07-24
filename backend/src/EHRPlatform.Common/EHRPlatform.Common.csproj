@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -41,6 +41,15 @@
     
     <!-- Messaging -->
     <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+    
+    <!-- Data Access -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
+    
+    <!-- Serilog DI integration -->
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    
+    <!-- FluentValidation DI extensions (AspNetCore brings IServiceCollection extensions) -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
     
     <!-- Encryption & Security -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.0" />

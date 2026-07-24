@@ -55,4 +55,9 @@ public class OutboxEvent
     /// Error message from last failed attempt (if any).
     /// </summary>
     public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Whether this event should be retried (not yet published and below max attempts).
+    /// </summary>
+    public bool ShouldRetry => !IsPublished && PublishAttempts < MaxPublishAttempts;
 }

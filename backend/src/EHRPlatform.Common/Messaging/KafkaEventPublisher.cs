@@ -1,26 +1,21 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Confluent.Kafka;
-using Microsoft.Extensions.Hosting;
+using EHRPlatform.Common.Events;
+using EHRPlatform.Common.Utilities;
 using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Common.Messaging;
 
 /// <summary>
-/// Kafka implementation of IEventPublisher.
-/// Publishes integration events to Kafka topics.
-/// 
-/// Topic naming: {EventType}.{Environment}
-/// Example: PatientCreated.production, PatientUpdated.development
-/// 
-/// Partitioning: By AggregateId for ordering within aggregate
-/// Retries: Handled by Kafka client (configurable)
+/// Kafka implementation of <see cref="IEventPublisher"/>.
+///
+/// Topic naming: {eventType}.{environment}
+/// Example: patient-created-event.production
+///
+/// Partitioning: by EventId (override <see cref="IntegrationEvent.GetPartitionKey"/> for aggregate ordering).
+/// Retries: configured in <see cref="KafkaConfigBuilder.CreateProducerConfig"/>.
 /// </summary>
-public class KafkaEventPublisher : IEventPublisher
+public sealed class KafkaEventPublisher : IEventPublisher
 {
     private readonly IProducer<string, string> _producer;
     private readonly string _environment;
@@ -36,9 +31,7 @@ public class KafkaEventPublisher : IEventPublisher
         _logger = logger;
     }
 
-    /// <summary>
-    /// Publish single event to Kafka.
-    /// </summary>
+    /// <inheritdoc/>
     public async Task PublishAsync(IntegrationEvent @event, CancellationToken cancellationToken = default)
     {
         ArgumentGuard.NotNull(@event, nameof(@event));
@@ -49,23 +42,20 @@ public class KafkaEventPublisher : IEventPublisher
         {
             var message = new Message<string, string>
             {
-                Key = @event.EventId.ToString(), // Partition by event ID
-                Value = JsonSerializer.Serialize(@event),
+                Key = @event.GetPartitionKey(),
+                Value = JsonSerializer.Serialize(@event, @event.GetType()),
                 Timestamp = new Timestamp(DateTime.UtcNow)
             };
 
-            var deliveryReport = await _producer.ProduceAsync(topicName, message);
+            var deliveryReport = await _producer.ProduceAsync(topicName, message, cancellationToken);
 
             if (deliveryReport.Status != PersistenceStatus.Persisted)
-            {
-                throw new KafkaException($"Failed to deliver message to {topicName}: {deliveryReport.Error.Reason}");
-            }
+                throw new InvalidOperationException(
+                    $"Event delivery to '{topicName}' was not persisted (status: {deliveryReport.Status}).");
 
             _logger.LogInformation(
-                "Event {EventId} of type {EventType} published to {Topic}",
-                @event.EventId,
-                @event.EventType,
-                topicName);
+                "Event {EventId} ({EventType}) published to {Topic}",
+                @event.EventId, @event.EventType, topicName);
         }
         catch (Exception ex)
         {
@@ -74,9 +64,7 @@ public class KafkaEventPublisher : IEventPublisher
         }
     }
 
-    /// <summary>
-    /// Publish multiple events in batch.
-    /// </summary>
+    /// <inheritdoc/>
     public async Task PublishBatchAsync(
         IEnumerable<IntegrationEvent> events,
         CancellationToken cancellationToken = default)
@@ -87,36 +75,30 @@ public class KafkaEventPublisher : IEventPublisher
         if (eventList.Count == 0)
             return;
 
-        var tasks = eventList
-            .GroupBy(e => GetTopicName(e.EventType))
-            .SelectMany(g => g.Select(e => PublishAsync(e, cancellationToken)))
-            .ToList();
-
+        var tasks = eventList.Select(e => PublishAsync(e, cancellationToken));
         await Task.WhenAll(tasks);
 
         _logger.LogInformation("Published {Count} events in batch", eventList.Count);
     }
 
-    /// <summary>
-    /// Get Kafka topic name for event type.
-    /// Format: {eventType}.{environment}
-    /// Example: PatientCreated.production
-    /// </summary>
-    private string GetTopicName(string eventType)
-    {
-        return $"{eventType}.{_environment}".ToLower();
-    }
+    private string GetTopicName(string eventType) =>
+        $"{eventType}.{_environment}".ToLower();
 }
 
 /// <summary>
-/// Base class for Kafka consumers.
-/// Automatically handles message deserialization and offset management.
+/// Base class for Kafka consumers. Handles deserialization and offset management.
 /// </summary>
-public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent : IntegrationEvent
+public abstract class KafkaConsumerBase<TEvent> : Microsoft.Extensions.Hosting.BackgroundService
+    where TEvent : IntegrationEvent
 {
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger _logger;
     private readonly string _topicName;
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     protected KafkaConsumerBase(
         IConsumer<string, string> consumer,
@@ -128,18 +110,12 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent
         _logger = logger;
     }
 
-    /// <summary>
-    /// Override to handle event.
-    /// </summary>
+    /// <summary>Override to process each received event.</summary>
     protected abstract Task HandleEventAsync(TEvent @event, CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Main consumer loop.
-    /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _consumer.Subscribe(_topicName);
-
         _logger.LogInformation("Kafka consumer started for topic {Topic}", _topicName);
 
         try
@@ -147,34 +123,26 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent
             while (!stoppingToken.IsCancellationRequested)
             {
                 var consumeResult = _consumer.Consume(stoppingToken);
-
-                if (consumeResult == null)
-                    continue;
+                if (consumeResult == null) continue;
 
                 try
                 {
-                    var @event = JsonSerializer.Deserialize<TEvent>(
-                        consumeResult.Message.Value,
-                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
+                    var @event = JsonSerializer.Deserialize<TEvent>(consumeResult.Message.Value, _jsonOptions);
                     if (@event != null)
-                    {
                         await HandleEventAsync(@event, stoppingToken);
-                    }
 
-                    // Commit offset after successful processing
                     _consumer.Commit(consumeResult);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing message from {Topic}", _topicName);
-                    // Message will be retried on next consumer startup
                 }
             }
         }
+        catch (OperationCanceledException) { /* expected on shutdown */ }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Kafka consumer error");
+            _logger.LogError(ex, "Kafka consumer fatal error");
         }
         finally
         {
@@ -184,18 +152,11 @@ public abstract class KafkaConsumerBase<TEvent> : BackgroundService where TEvent
     }
 }
 
-/// <summary>
-/// Kafka configuration builder.
-/// Creates producer and consumer configurations.
-/// </summary>
+/// <summary>Factory for standard Kafka producer/consumer configurations.</summary>
 public static class KafkaConfigBuilder
 {
-    /// <summary>
-    /// Create producer configuration for publishing events.
-    /// </summary>
-    public static ProducerConfig CreateProducerConfig(string bootstrapServers)
-    {
-        return new ProducerConfig
+    public static ProducerConfig CreateProducerConfig(string bootstrapServers) =>
+        new()
         {
             BootstrapServers = bootstrapServers,
             ClientId = $"{Environment.MachineName}-producer",
@@ -205,14 +166,9 @@ public static class KafkaConfigBuilder
             EnableDeliveryReports = true,
             CompressionType = CompressionType.Snappy
         };
-    }
 
-    /// <summary>
-    /// Create consumer configuration for subscribing to events.
-    /// </summary>
-    public static ConsumerConfig CreateConsumerConfig(string bootstrapServers, string groupId)
-    {
-        return new ConsumerConfig
+    public static ConsumerConfig CreateConsumerConfig(string bootstrapServers, string groupId) =>
+        new()
         {
             BootstrapServers = bootstrapServers,
             GroupId = groupId,
@@ -221,23 +177,4 @@ public static class KafkaConfigBuilder
             EnableAutoCommit = false,
             AllowAutoCreateTopics = true
         };
-    }
-}
-
-/// <summary>
-/// Argument validation helper.
-/// </summary>
-internal static class ArgumentGuard
-{
-    public static void NotNull<T>(T? argument, string parameterName) where T : class
-    {
-        if (argument == null)
-            throw new ArgumentNullException(parameterName);
-    }
-
-    public static void NotNullOrEmpty(string? argument, string parameterName)
-    {
-        if (string.IsNullOrWhiteSpace(argument))
-            throw new ArgumentException("Value cannot be null or empty", parameterName);
-    }
 }

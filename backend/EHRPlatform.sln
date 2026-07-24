@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastru
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EHRPlatform.Common", "src\EHRPlatform.Common\EHRPlatform.Common.csproj", "{A1A1A1A1-B2B2-B2B2-C3C3-C3C3C3C3C3C3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EHRPlatform.ApiGateway", "src\EHRPlatform.ApiGateway\EHRPlatform.ApiGateway.csproj", "{B2B2B2B2-C3C3-C3C3-D4D4-D4D4D4D4D4D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EHRPlatform.ApiGateway", "src\EHRPlatform.Services.ApiGateway\EHRPlatform.Services.ApiGateway.csproj", "{B2B2B2B2-C3C3-C3C3-D4D4-D4D4D4D4D4D4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EHRPlatform.Services.Identity", "src\EHRPlatform.Services.Identity\EHRPlatform.Services.Identity.csproj", "{C3C3C3C3-D4D4-D4D4-E5E5-E5E5E5E5E5E5}"
 EndProject

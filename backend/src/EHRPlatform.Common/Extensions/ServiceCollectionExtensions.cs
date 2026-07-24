@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using Serilog;
+using Serilog.Extensions.Logging;
 using EHRPlatform.Common.Caching;
 using EHRPlatform.Common.Security;
 using EHRPlatform.Common.Health;
@@ -159,3 +161,4 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+}
