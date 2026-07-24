@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EHRPlatform.Common.Data;
+using EHRPlatform.Common.Events;
 using EHRPlatform.Services.Identity.Domain.Entities;
 
 namespace EHRPlatform.Services.Identity.Data;
@@ -12,6 +13,7 @@ public class IdentityContext : BaseDbContext
 {
     public IdentityContext(DbContextOptions<IdentityContext> options) : base(options) { }
 
+    public DbSet<OutboxEvent> OutboxEvents { get; set; } = null!;
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Role> Roles { get; set; } = null!;
     public DbSet<Permission> Permissions { get; set; } = null!;

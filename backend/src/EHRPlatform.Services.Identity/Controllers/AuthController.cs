@@ -1,11 +1,13 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EHRPlatform.Services.Identity.Features.Auth.Commands;
+using EHRPlatform.Services.Identity.Application.Identity.DTOs.Responses;
 
 namespace EHRPlatform.Services.Identity.Controllers;
 
 /// <summary>
-/// Authentication endpoints for login, register, refresh token.
+/// Authentication endpoints: login, register, refresh token, logout.
 /// </summary>
 [ApiController]
 [Route("api/v1/auth")]
@@ -19,11 +21,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Login with email and password.
-    /// Returns JWT access token and refresh token.
+    /// Login with email and password. Returns JWT access + refresh tokens.
     /// </summary>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(
         [FromBody] LoginCommand command,
@@ -34,11 +35,12 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register new user account.
+    /// Register a new user account.
     /// </summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterCommand command,
         CancellationToken cancellationToken)
@@ -48,10 +50,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Refresh JWT access token using refresh token.
+    /// Refresh access token using a valid refresh token.
     /// </summary>
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshTokenCommand command,
@@ -62,7 +64,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Logout - revoke refresh tokens.
+    /// Logout — revoke the current refresh token.
     /// </summary>
     [HttpPost("logout")]
     [Authorize]
@@ -76,12 +78,10 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Health check endpoint.
+    /// Service health check.
     /// </summary>
     [HttpGet("health")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult Health()
-    {
-        return Ok(new { status = "healthy", service = "identity-service" });
-    }
+    public IActionResult Health() =>
+        Ok(new { status = "healthy", service = "identity-service" });
 }

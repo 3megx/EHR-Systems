@@ -149,7 +149,7 @@ public static class MassTransitExtensions
             });
         });
 
-        services.AddScoped<IMessageBus, MassTransitBus>();
+        services.AddScoped<IMessageBus, EHRMessageBus>();
         return services;
     }
 }

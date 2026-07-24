@@ -7,40 +7,35 @@ using EHRPlatform.Common.Security;
 using EHRPlatform.Services.Identity.Application.Identity.DTOs.Responses;
 using EHRPlatform.Services.Identity.Domain.Entities;
 using EHRPlatform.Services.Identity.Features.Auth.Commands;
+using EHRPlatform.Services.Identity.Security;
 using Microsoft.Extensions.Logging;
 
 namespace EHRPlatform.Services.Identity.Features.Auth.Handlers;
 
 /// <summary>
-/// Handler for user login command.
-/// Validates credentials, generates JWT token, and handles MFA requirement.
+/// Validates credentials, issues JWT + refresh token, and handles MFA.
 /// HIPAA-compliant with audit logging.
 /// </summary>
 public class LoginCommandHandler : ICommandHandler<LoginCommand, LoginResponse>
 {
-    private readonly IUnitOfWork _uow;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IEncryptionService _encryptionService;
+    private readonly IUnitOfWork      _uow;
+    private readonly IPasswordHasher  _passwordHasher;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
-        IUnitOfWork uow,
-        IPasswordHasher passwordHasher,
-        IEncryptionService encryptionService,
+        IUnitOfWork      uow,
+        IPasswordHasher  passwordHasher,
+        IJwtTokenService jwtTokenService,
         ILogger<LoginCommandHandler> logger)
     {
-        _uow = uow ?? throw new ArgumentNullException(nameof(uow));
-        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
-        _encryptionService = encryptionService ?? throw new ArgumentNullException(nameof(encryptionService));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _uow             = uow             ?? throw new ArgumentNullException(nameof(uow));
+        _passwordHasher  = passwordHasher  ?? throw new ArgumentNullException(nameof(passwordHasher));
+        _jwtTokenService = jwtTokenService ?? throw new ArgumentNullException(nameof(jwtTokenService));
+        _logger          = logger          ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <summary>
-    /// Handle login request by validating credentials and generating tokens.
-    /// </summary>
-    public async Task<LoginResponse> Handle(
-        LoginCommand request,
-        CancellationToken cancellationToken)
+    public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
@@ -50,14 +45,13 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, LoginResponse>
             cancellationToken)
             ?? throw new UnauthorizedException("Invalid email or password");
 
-        // Check if account is locked
         if (user.IsLocked())
         {
-            _logger.LogWarning("Login attempt on locked account for email: {Email}", request.Email);
+            _logger.LogWarning("Locked account login attempt: {Email}", request.Email);
             throw new UnauthorizedException("Account is temporarily locked due to multiple failed attempts");
         }
 
-        // Verify password
+        // Verify password using the separate-salt path
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash, user.PasswordSalt))
         {
             user.FailedLoginAttempts++;
@@ -66,73 +60,48 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, LoginResponse>
                 user.Lock();
                 _logger.LogWarning("Account locked after 5 failed attempts: {Email}", request.Email);
             }
-
             await _uow.SaveChangesAsync(cancellationToken);
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        // If MFA is enabled, don't generate tokens yet
+        // MFA gate — don't issue tokens until second factor is passed
         if (user.MfaEnabled)
         {
             _logger.LogInformation("MFA required for user: {UserId}", user.Id);
-            return new LoginResponse
-            {
-                MfaRequired = true,
-                AccessToken = string.Empty,
-                RefreshToken = string.Empty,
-                ExpiresIn = 0
-            };
+            return new LoginResponse { MfaRequired = true, AccessToken = string.Empty, RefreshToken = string.Empty, ExpiresIn = 0 };
         }
 
         // Generate tokens
-        var accessToken = GenerateAccessToken(user);
+        var accessToken  = _jwtTokenService.GenerateAccessToken(user);
         var refreshToken = GenerateRefreshToken();
 
-        // Create and store refresh token
+        // Store hashed refresh token
         var refreshTokenEntity = new RefreshToken
         {
-            UserId = user.Id,
-            Token = _passwordHasher.Hash(refreshToken, ""),
+            UserId    = user.Id,
+            Token     = _passwordHasher.Hash(refreshToken, string.Empty),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedBy = user.Id
         };
+        await _uow.Repository<RefreshToken>().AddAsync(refreshTokenEntity, cancellationToken);
 
-        var rtRepo = _uow.Repository<RefreshToken>();
-        await rtRepo.AddAsync(refreshTokenEntity, cancellationToken);
-
-        // Update user login info
-        user.LastLogin = DateTime.UtcNow;
+        // Update last-login metadata
+        user.LastLogin           = DateTime.UtcNow;
         user.FailedLoginAttempts = 0;
-        user.UpdatedBy = user.Id;
-
+        user.UpdatedBy           = user.Id;
         await _uow.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation("Login successful for user: {UserId}", user.Id);
 
         return new LoginResponse
         {
-            AccessToken = accessToken,
+            AccessToken  = accessToken,
             RefreshToken = refreshToken,
-            ExpiresIn = 3600,
-            MfaRequired = false
+            ExpiresIn    = _jwtTokenService.ExpiresInSeconds,
+            MfaRequired  = false
         };
     }
 
-    /// <summary>
-    /// Generate JWT access token with user claims.
-    /// </summary>
-    private static string GenerateAccessToken(User user)
-    {
-        // TODO: Implement JWT token generation with claims
-        // Should include: user ID, email, roles, permissions, subject, issued at, expiration
-        return Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(64));
-    }
-
-    /// <summary>
-    /// Generate secure random refresh token.
-    /// </summary>
-    private static string GenerateRefreshToken()
-    {
-        return Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
-    }
+    private static string GenerateRefreshToken() =>
+        Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
 }
