@@ -118,6 +118,39 @@ public class AuditLog
     /// Indicates if this record has been verified/sealed.
     /// </summary>
     public bool IsSealed { get; set; }
+
+    // ── Integrity ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Compute a SHA-256 integrity hash over the immutable audit fields and seal
+    /// this record.  Call once before persisting; any subsequent modification will
+    /// invalidate the hash and can be detected by <see cref="VerifyIntegrity"/>.
+    /// </summary>
+    public AuditLog Seal()
+    {
+        IntegrityHash = ComputeHash();
+        IsSealed      = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the record has not been tampered with since sealing.
+    /// </summary>
+    public bool VerifyIntegrity() =>
+        IsSealed && IntegrityHash == ComputeHash();
+
+    private string ComputeHash()
+    {
+        // Canonical payload — covers all immutable identity/action fields.
+        var payload = string.Join("|",
+            Id, UserId, Timestamp.ToString("O"),
+            (int)Action, ResourceType, ResourceId ?? "",
+            (int)Result, CorrelationId ?? "");
+
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(payload);
+        return Convert.ToBase64String(sha.ComputeHash(bytes));
+    }
 }
 
 /// <summary>
