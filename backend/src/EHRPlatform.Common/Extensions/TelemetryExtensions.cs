@@ -14,7 +14,11 @@ namespace EHRPlatform.Common.Extensions;
 ///   HttpClient outbound calls
 ///   EHR custom activities (EHRTelemetry.ActivitySource)
 ///
-/// Exporters: OTLP (Jaeger/Grafana Tempo) or Console in development.
+/// Exporters (selected by config):
+///   OpenTelemetry:OtlpEndpoint set → OTLP (Jaeger / Grafana Tempo)
+///   Not set                        → Console (development fallback)
+///
+/// HIPAA: RecordException captures exception type and message only — never PHI.
 /// </summary>
 public static class TelemetryExtensions
 {
@@ -29,7 +33,8 @@ public static class TelemetryExtensions
         IConfiguration configuration,
         string serviceName)
     {
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"]
+                        ?? Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
 
         services.AddOpenTelemetry()
             .ConfigureResource(r => r
@@ -38,27 +43,37 @@ public static class TelemetryExtensions
                     serviceVersion: EHRTelemetry.ServiceVersion)
                 .AddAttributes(new Dictionary<string, object>
                 {
-                    ["deployment.environment"] = configuration["ASPNETCORE_ENVIRONMENT"] ?? "production"
+                    ["deployment.environment"] =
+                        configuration["ASPNETCORE_ENVIRONMENT"] ?? "production"
                 }))
             .WithTracing(tracing =>
             {
                 tracing
-                    .AddSource(EHRTelemetry.ServiceName)   // Custom EHR spans
+                    .AddSource(EHRTelemetry.ServiceName)        // Custom EHR spans
                     .AddAspNetCoreInstrumentation(opts =>
                     {
                         opts.RecordException = true;
-                        // Exclude health check noise
-                        opts.Filter = ctx => !ctx.Request.Path.StartsWithSegments("/health");
+                        // Exclude health check noise from traces
+                        opts.Filter = ctx =>
+                            !ctx.Request.Path.StartsWithSegments("/health") &&
+                            !ctx.Request.Path.StartsWithSegments("/metrics");
                     })
                     .AddHttpClientInstrumentation(opts =>
                     {
                         opts.RecordException = true;
                     });
 
-                // Console exporter for development; swap for OTLP (Jaeger / Grafana Tempo)
-                // in production by adding OpenTelemetry.Exporter.Otlp and calling:
-                //   tracing.AddOtlpExporter(opts => opts.Endpoint = new Uri(otlpEndpoint));
-                tracing.AddConsoleExporter();
+                if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+                {
+                    // Production: export to Jaeger / Grafana Tempo / any OTLP collector
+                    tracing.AddOtlpExporter(opts =>
+                        opts.Endpoint = new Uri(otlpEndpoint));
+                }
+                else
+                {
+                    // Development: write spans to console for quick inspection
+                    tracing.AddConsoleExporter();
+                }
             });
 
         return services;
