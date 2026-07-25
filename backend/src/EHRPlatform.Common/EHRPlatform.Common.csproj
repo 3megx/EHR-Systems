@@ -9,6 +9,11 @@
     <RootNamespace>EHRPlatform.Common</RootNamespace>
   </PropertyGroup>
 
+  <!-- ASP.NET Core types (HttpContext, IApplicationBuilder, etc.) without switching to Web SDK -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Core Frameworks -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
@@ -59,6 +64,7 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
     
     <!-- Data Access -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
